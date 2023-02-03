@@ -134,7 +134,7 @@ class Script(scripts.Script):
             print("Something went wrong with GIF. Processing still from img2img.") #need better error checking
             proc = process_images(p)
             return proc
-        #Do
+        #TODO: Add logic for seeds. Same seed every set? Iterate?
         return_images = []
         all_prompts = []
         infotexts = []
