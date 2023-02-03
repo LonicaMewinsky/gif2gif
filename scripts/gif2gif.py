@@ -10,7 +10,7 @@ from PIL import Image, ImageSequence
 from modules.processing import Processed, process_images
 from modules.shared import state
 
-with open(os.path.join(scripts.basedir(), "readme.md"), 'r') as file:
+with open(os.path.join(scripts.basedir(), "instructions.txt"), 'r') as file:
     mkd_inst = file.read()
 
 #Rudimentary interpolation
