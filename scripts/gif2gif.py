@@ -176,7 +176,7 @@ class Script(scripts.Script):
                     inter_batch.append(bi)
                 #First make temporary file via save_images, then save actual gif over it..
                 #Probably a better way to do this, but this easily maintains file name and .txt file logic
-                gif_filename = (modules.images.save_image(inp_gif, outpath, "gif2gif", extension = 'gif', info = infotexts[0])[0])
+                gif_filename = (modules.images.save_image(inp_gif, outpath, "gif2gif", extension = 'gif', info = infotexts[b])[0])
                 print(f"gif2gif: Generating GIF to {gif_filename}..")
                 inter_batch[0].save(gif_filename,
                     save_all = True, append_images = inter_batch[1:], loop = 0,
