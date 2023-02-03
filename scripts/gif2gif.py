@@ -9,7 +9,7 @@ from PIL import Image, ImageSequence
 from modules.processing import Processed, process_images
 from modules.shared import state
 
-with open(os.path.join(scripts.basedir(), "instructions.txt"), 'r') as file:
+with open(os.path.join(scripts.basedir(), "readme.md"), 'r') as file:
     mkd_inst = file.read()
 
 #Rudimentary interpolation
@@ -55,9 +55,8 @@ class Script(scripts.Script):
     def show(self, is_img2img):
         return is_img2img
     
-    def ui(self, is_img2img):
+    def ui(self, is_img2img, *args):
         #Controls
-
         with gr.Accordion("Click for Readme", open = False):
             gr.Markdown(mkd_inst)
         with gr.Box():    
