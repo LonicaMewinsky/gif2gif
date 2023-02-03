@@ -131,10 +131,11 @@ class Script(scripts.Script):
         try:
             inp_gif = Image.open(self.gif_name)
         except:
-            print("Something went wrong with GIF. Processing still from img2img.") #need better error checking
+            print("Something went wrong with GIF. Processing still from img2img.")
             proc = process_images(p)
             return proc
         #TODO: Add logic for seeds. Same seed every set? Iterate?
+        print(p.batch_size)
         return_images = []
         all_prompts = []
         infotexts = []
@@ -146,7 +147,7 @@ class Script(scripts.Script):
         p.do_not_save_samples = gif_clear_frames
         p.n_iter = 1 #we'll be processing iters per-gif-set
         outpath = os.path.join(p.outpath_samples, "gif2gif")
-        print(f"Will process {gif_n_iter} GIF(s) with {state.job_count} total frames.")
+        print(f"Will process {gif_n_iter * p.batch_size} GIF(s) with {state.job_count * p.batch_size} total frames.")
         for x in range(gif_n_iter):
             if state.skipped:
                 state.skipped = False
@@ -164,18 +165,26 @@ class Script(scripts.Script):
                 inter_images += proc.images
                 all_prompts += proc.all_prompts
                 infotexts += proc.infotexts
+            print(len(inter_images))
             if(gif_resize):
                 for i in range(len(inter_images)):
                     inter_images[i] = inter_images[i].resize(self.orig_dimensions)
-            #First make temporary file via save_images, then save actual gif over it..
-            #Probably a better way to do this, but this easily maintains file name and .txt file logic
-            gif_filename = (modules.images.save_image(inp_gif, outpath, "gif2gif", extension = 'gif', info = infotexts[0])[0])
-            print(f"gif2gif: Generating GIF to {gif_filename}..")
-            inter_images[0].save(gif_filename,
-                save_all = True, append_images = inter_images[1:], loop = 0,
-                optimize = False, duration = self.desired_duration)
-            print(f"gif2gif: Interpolating {gif_filename}..")
-            interp(gif_filename, self.desired_interp, self.desired_duration)
-            return_images.extend(inter_images)
+            #Separate batches..
+            inter_batch = []
+            for b in range(p.batch_size):
+                for bi in inter_images[(b)::p.batch_size]:
+                    inter_batch.append(bi)
+                #First make temporary file via save_images, then save actual gif over it..
+                #Probably a better way to do this, but this easily maintains file name and .txt file logic
+                gif_filename = (modules.images.save_image(inp_gif, outpath, "gif2gif", extension = 'gif', info = infotexts[0])[0])
+                print(f"gif2gif: Generating GIF to {gif_filename}..")
+                inter_batch[0].save(gif_filename,
+                    save_all = True, append_images = inter_batch[1:], loop = 0,
+                    optimize = False, duration = self.desired_duration)
+                if(self.desired_interp > 0):
+                    print(f"gif2gif: Interpolating {gif_filename}..")
+                    interp(gif_filename, self.desired_interp, self.desired_duration)
+                return_images.extend(inter_batch)
+                inter_batch = []
             inter_images = []
         return Processed(p, return_images, p.seed, "", all_prompts=all_prompts, infotexts=infotexts)
