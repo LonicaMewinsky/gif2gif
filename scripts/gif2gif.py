@@ -55,7 +55,7 @@ class Script(scripts.Script):
     def show(self, is_img2img):
         return is_img2img
     
-    def ui(self, is_img2img, *args):
+    def ui(self, is_img2img):
         #Controls
         with gr.Accordion("Click for Readme", open = False):
             gr.Markdown(mkd_inst)
