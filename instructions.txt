@@ -1,7 +1,4 @@
 # gif2gif
-Automatic1111 Stable Diffusion WebUI GIF Extension
-
-### gif2gif script extension
 
 The purpose of this script is to accept an animated gif as input, process frames as img2img typically would, and recombine them back into an animated gif. Not intended to have extensive functionality. Referenced code from prompts_from_file.
 
