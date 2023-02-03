@@ -1,5 +1,5 @@
 # gif2gif
-Automatic1111 gif extension
+Automatic1111 Stable Diffusion WebUI GIF Extension
 
 ### gif2gif script extension
 
@@ -19,5 +19,6 @@ The purpose of this script is to accept an animated gif as input, process frames
 **Tips:**
  - Configure and process the gif in img2img (it'll use the first frame) before running the script. Find a good seed!
  - Interpolation is not always necessary nor helpful.
+ - Inpainting sort of works. Serendipitously.
 
 ![R](https://user-images.githubusercontent.com/93007558/216517487-542271b1-6fdb-4e54-a261-e500f5cc5c7a.gif) ![gif2gif-0011](https://user-images.githubusercontent.com/93007558/216517468-ce188729-5472-4558-a1bc-4059af1e0bc4.gif)
