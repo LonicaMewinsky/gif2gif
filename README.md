@@ -27,5 +27,6 @@ The purpose of this script is to accept an animated gif as input, process frames
 
 ![image](https://user-images.githubusercontent.com/93007558/216690484-d3679737-c179-46c9-8fd9-860816601451.png)
 
-![R](https://user-images.githubusercontent.com/93007558/216517487-542271b1-6fdb-4e54-a261-e500f5cc5c7a.gif)![gif2gif-0011](https://user-images.githubusercontent.com/93007558/216517468-ce188729-5472-4558-a1bc-4059af1e0bc4.gif)
+![R](https://user-images.githubusercontent.com/93007558/216517487-542271b1-6fdb-4e54-a261-e500f5cc5c7a.gif)![download](https://user-images.githubusercontent.com/93007558/216803715-81dfc9e6-8c9a-47d5-9879-27acfac34eb8.gif)
+
 ![source](https://user-images.githubusercontent.com/93007558/216689956-4740b35e-aa2c-4869-955c-27836b56a378.gif)![gif2gif-0052](https://user-images.githubusercontent.com/93007558/216690052-6694989a-b2cb-42a8-a1d4-fc0ebd42776b.gif)
