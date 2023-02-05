@@ -60,8 +60,6 @@ class Script(scripts.Script):
     
     def ui(self, is_img2img):
         #Controls
-        with gr.Accordion("Click for Readme", open = False):
-            gr.Markdown(mkd_inst)
         with gr.Box():    
             with gr.Column():
                 upload_gif = gr.File(label="Upload GIF", file_types = ['.gif;.webm'], live=True, file_count = "single")
@@ -86,7 +84,8 @@ class Script(scripts.Script):
                                     fps_original = gr.Textbox(value="", interactive = False, label = "Original FPS")
                                     seconds_original = gr.Textbox(value="", interactive = False, label = "Original total duration")
                                     frames_original = gr.Textbox(value="", interactive = False, label = "Original total frames")
-                                    
+        with gr.Accordion("Click for Readme", open = False):
+            gr.Markdown(mkd_inst)
         #Control functions
         def processgif(gif):
             try:
