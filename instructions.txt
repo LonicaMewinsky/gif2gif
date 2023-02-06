@@ -17,7 +17,3 @@ The purpose of this script is to accept an animated gif as input, process frames
  - Configure and process the gif in img2img (it'll use the first frame) before running the script. Find a good seed!
  - Interpolation is not always necessary nor helpful.
  - Inpainting sort of works. Serendipitously.
-
-**TODO:**
- - Figure out img2img subtabs (eg sketch). Extend functionality or find a way to leave them alone entirely.
- - Find a way to fold the script into img2img subtabs? Sketch, Inpaint, img2img..
