@@ -22,8 +22,8 @@ The purpose of this script is to accept an animated gif as input, process frames
  - Interpolation is not always necessary nor helpful.
 
 **Changelog:**
-- Updated inpainting window to behave more predictably
-- Fixed inpainting window odd behavior on images smaller than 480h
+- 2/10/23: Updated inpainting window to behave more predictably
+- 2/10/23: Fixed inpainting window odd behavior on images smaller than 480h
 
 ![image](https://user-images.githubusercontent.com/93007558/216690484-d3679737-c179-46c9-8fd9-860816601451.png)
 
