@@ -99,8 +99,6 @@ class Script(scripts.Script):
                 img_for_ui = init_gif
                 if img_for_ui.height < 480:
                     img_for_ui = img_for_ui.resize((round(480*img_for_ui.width/img_for_ui.height), 480), Image.Resampling.LANCZOS)
-                print(img_for_ui.height)
-                print(img_for_ui.width)
                 img_for_ui.save(img_for_ui_path)
                 self.orig_dimensions = init_gif.size
                 self.orig_duration = init_gif.info["duration"]
