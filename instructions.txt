@@ -5,15 +5,15 @@ The purpose of this script is to accept an animated gif as input, process frames
 **Instructions:**
  - img2img batch *count* and *size* represent completed GIFs, not individual images.
     - eg a gif with 30 frames, batch count of 2, batch size of 3, will result in 6 gifs (180 images).
- - Drop or select gif in the below box; a preview should appear if it is a valid animated gif.
+ - Drop or select gif in the script's box; a preview should appear if it is a valid animated gif.
+ - Inpainting works, but currently limited to one mask applied to all frames equally.
  - Adjust desired FPS if needed/wanted. Default slider position is original FPS.
  - Add interpolation frames if wanted. Preview should render.
    - Count of interp frames represent the number of blend steps between keyframes.
    - This is a very simple dynamic interp function; the keyframes are left as-is.
    - When *actual FPS* reaches 50, the maximum, the resultant gif will slow and extend to accomodate interp.
- - Results are dropped into outputs/img2img/gif2gif
+ - Results are dropped into outputs/img2img/gif2gif.
 
 **Tips:**
  - Configure and process the gif in img2img (it'll use the first frame) before running the script. Find a good seed!
  - Interpolation is not always necessary nor helpful.
- - Inpainting sort of works. Serendipitously.

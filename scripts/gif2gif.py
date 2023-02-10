@@ -51,6 +51,7 @@ class Script(scripts.Script):
         self.slowmo = False
         self.gif2gifdir = tempfile.TemporaryDirectory()
         self.img2img_component = gr.Image()
+        self.img2img_inpaint_component = gr.Image()
         return None
 
     def title(self):
@@ -86,18 +87,28 @@ class Script(scripts.Script):
                                     frames_original = gr.Textbox(value="", interactive = False, label = "Original total frames")
         with gr.Accordion("Click for Readme", open = False):
             gr.Markdown(mkd_inst)
+        
         #Control functions
         def processgif(gif):
             try:
                 init_gif = Image.open(gif.name)
                 self.gif_name = gif.name
+                #Need to also put images in img2img/inpainting windows (ui will not run without)
+                #Gradio painting tools act weird with smaller images.. resize to 480 if smaller
+                img_for_ui_path = (f"{self.gif2gifdir.name}/imgforui.gif")
+                img_for_ui = init_gif
+                if img_for_ui.height < 480:
+                    img_for_ui = img_for_ui.resize((round(480*img_for_ui.width/img_for_ui.height), 480), Image.Resampling.LANCZOS)
+                print(img_for_ui.height)
+                print(img_for_ui.width)
+                img_for_ui.save(img_for_ui_path)
                 self.orig_dimensions = init_gif.size
                 self.orig_duration = init_gif.info["duration"]
                 self.orig_n_frames = init_gif.n_frames
                 self.orig_total_seconds = round((self.orig_duration * self.orig_n_frames)/1000, 2)
                 self.orig_fps = round(1000 / int(init_gif.info["duration"]), 2)
                 self.ready = True
-                return init_gif, gif.name, gr.Image.update(visible = True), self.orig_fps, self.orig_fps, (f"{self.orig_total_seconds} seconds"), self.orig_n_frames
+                return img_for_ui_path, img_for_ui_path, gif.name, gr.Image.update(visible = True), self.orig_fps, self.orig_fps, (f"{self.orig_total_seconds} seconds"), self.orig_n_frames
             except:
                 print(f"Failed to load {gif.name}. Not a valid animated GIF?")
                 return None
@@ -129,17 +140,20 @@ class Script(scripts.Script):
         #Control change events
         fps_slider.change(fn=fpsupdate, inputs = [fps_slider, interp_slider], outputs = [display_gif, fps_actual, seconds_actual, frames_actual])
         interp_slider.change(fn=fpsupdate, inputs = [fps_slider, interp_slider], outputs = [display_gif, fps_actual, seconds_actual, frames_actual])
-        upload_gif.upload(fn=processgif, inputs = upload_gif, outputs = [self.img2img_component, display_gif, display_gif, fps_slider, fps_original, seconds_original, frames_original])
+        upload_gif.upload(fn=processgif, inputs = upload_gif, outputs = [self.img2img_component, self.img2img_inpaint_component, display_gif, display_gif, fps_slider, fps_original, seconds_original, frames_original])
         upload_gif.change(fn=cleargif, inputs = upload_gif, outputs = display_gif)
 
         return [gif_resize, gif_clear_frames, gif_common_seed]
 
-    #Grab the img2img image component for change later
+    #Grab the img2img image components for update later
     #Maybe there's a better way to do this?
     def after_component(self, component, **kwargs):
         if component.elem_id == "img2img_image":
             self.img2img_component = component
             return self.img2img_component
+        if component.elem_id == "img2maskimg":
+            self.img2img_inpaint_component = component
+            return self.img2img_inpaint_component
     
     #Main run
     def run(self, p, gif_resize, gif_clear_frames, gif_common_seed, *args):
