@@ -3,7 +3,7 @@ Automatic1111 Stable Diffusion WebUI GIF Extension
 
 ### gif2gif script extension
 
-The purpose of this script is to accept an animated gif as input, process frames as img2img typically would, and recombine them back into an animated gif. Not intended to have extensive functionality. Referenced code from prompts_from_file.
+The purpose of this script is to accept an animated gif as input, process frames as img2img typically would, and recombine them back into an animated gif. Intended to provide a fun, fast, gif-to-gif workflow that supports new models and methods such as InstructPix2Pix. Drop in a gif and go. Referenced code from prompts_from_file.
 
 **Instructions:**
  - img2img batch *count* and *size* represent completed GIFs, not individual images.
@@ -21,6 +21,10 @@ The purpose of this script is to accept an animated gif as input, process frames
  - Configure and process the gif in img2img (it'll use the first frame) before running the script. Find a good seed!
  - Interpolation is not always necessary nor helpful.
 
+**Installation:**
+ - Install from the Automatic1111 WebUI extensions list, restart UI or
+ - Clone this repo into your Automatic1111 WebUI /extensions folder, restart UI
+ 
 **Changelog:**
 - 2/10/23: Updated inpainting window to behave more predictably
 - 2/10/23: Fixed inpainting window odd behavior on images smaller than 480h
