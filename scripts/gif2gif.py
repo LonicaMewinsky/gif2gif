@@ -63,7 +63,7 @@ class Script(scripts.Script):
         #Controls
         with gr.Box():    
             with gr.Column():
-                upload_gif = gr.File(label="Upload GIF", file_types = ['.gif;.webm'], live=True, file_count = "single")
+                upload_gif = gr.File(label="Upload GIF", file_types = ['.gif;.webm;'], live=True, file_count = "single")
                 display_gif = gr.Image(inputs = upload_gif, visible = False, label = "Preview GIF", type= "filepath")
                 with gr.Row():
                     with gr.Column():
@@ -134,7 +134,7 @@ class Script(scripts.Script):
                 if interp:
                     interp(gifbuffer, self.desired_interp, self.desired_duration)
                 return gifbuffer, round(1000/self.desired_duration, 2), f"{self.desired_total_seconds} seconds", total_n_frames
-        
+
         #Control change events
         fps_slider.change(fn=fpsupdate, inputs = [fps_slider, interp_slider], outputs = [display_gif, fps_actual, seconds_actual, frames_actual])
         interp_slider.change(fn=fpsupdate, inputs = [fps_slider, interp_slider], outputs = [display_gif, fps_actual, seconds_actual, frames_actual])
@@ -160,32 +160,27 @@ class Script(scripts.Script):
         except:
             print("Something went wrong with GIF. Processing still from img2img.")
             proc = process_images(p)
-            return proc
-        return_images = []
-        all_prompts = []
-        infotexts = []
-        inter_images = []
-        gif_n_iter = p.n_iter
-        state.job_count = inp_gif.n_frames * gif_n_iter
-        state.job_no = 0
+            return proc        
+        return_images, all_prompts, infotexts, inter_images = [], [], [], []
+        state.job_count = inp_gif.n_frames * p.n_iter
         p.do_not_save_grid = True
         p.do_not_save_samples = gif_clear_frames
+        gif_n_iter = p.n_iter
         p.n_iter = 1 #we'll be processing iters per-gif-set
         outpath = os.path.join(p.outpath_samples, "gif2gif")
         print(f"Will process {gif_n_iter * p.batch_size} GIF(s) with {state.job_count * p.batch_size} total frames.")
+        
+        #Iterate batch count
         for x in range(gif_n_iter):
-            if state.skipped:
-                state.skipped = False
-            if state.interrupted:
-                break
-            #If the seed is -1, make sure all frames have same random
+            if state.skipped: state.skipped = False
+            if state.interrupted: break
             if(gif_common_seed and (p.seed == -1)):
                 p.seed = random.randrange(100000000, 999999999)
+            
+            #Iterate frames
             for frame in ImageSequence.Iterator(inp_gif):
-                if state.skipped:
-                    state.skipped = False
-                if state.interrupted:
-                    break
+                if state.skipped: state.skipped = False
+                if state.interrupted: break
                 state.job = f"{state.job_no + 1} out of {state.job_count}"
                 copy_p = copy.copy(p)
                 copy_p.init_images = [frame] * p.batch_size
@@ -196,7 +191,8 @@ class Script(scripts.Script):
             if(gif_resize):
                 for i in range(len(inter_images)):
                     inter_images[i] = inter_images[i].resize(self.orig_dimensions)
-            #Separate batches..
+            
+            #Separate frames by batch size
             inter_batch = []
             for b in range(p.batch_size):
                 for bi in inter_images[(b)::p.batch_size]:
