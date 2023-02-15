@@ -16,8 +16,7 @@ with open(os.path.join(scripts.basedir(), "instructions.txt"), 'r') as file:
 #Rudimentary interpolation
 def interp(gif, iframes, dur):
     try:
-        working_images = []
-        resframes = []
+        working_images, resframes = [], []
         pilgif = Image.open(gif)
         for frame in ImageSequence.Iterator(pilgif):
             converted = frame.convert('RGBA')
@@ -185,7 +184,9 @@ class Script(scripts.Script):
                 copy_p = copy.copy(p)
                 copy_p.init_images = [frame] * p.batch_size
                 proc = process_images(copy_p)
-                inter_images += proc.images
+                for pi in proc.images:
+                    if type(pi) is Image.Image:
+                        inter_images.append(pi)
                 all_prompts += proc.all_prompts
                 infotexts += proc.infotexts
             if(gif_resize):
