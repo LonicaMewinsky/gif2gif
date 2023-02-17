@@ -27,6 +27,7 @@ The purpose of this script is to accept an animated gif as input, process frames
  
 **Changelog:**
 - 2/14/23: Now works, mostly, with https://github.com/Mikubill/sd-webui-controlnet extension.
+           First frame seems to not get any guidance from controlnet. Investigating.
 - 2/10/23: Updated inpainting window to behave more predictably
 - 2/10/23: Fixed inpainting window odd behavior on images smaller than 480h
 
