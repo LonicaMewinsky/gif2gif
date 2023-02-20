@@ -62,7 +62,7 @@ class Script(scripts.Script):
         #Controls
         with gr.Box():    
             with gr.Column():
-                upload_gif = gr.File(label="Upload GIF", file_types = ['.gif;.webm;'], live=True, file_count = "single")
+                upload_gif = gr.File(label="Upload GIF", file_types = ['.gif','.webp','.plc'], live=True, file_count = "single")
                 display_gif = gr.Image(inputs = upload_gif, visible = False, label = "Preview GIF", type= "filepath")
                 with gr.Row():
                     with gr.Column():
@@ -153,7 +153,7 @@ class Script(scripts.Script):
             return self.img2img_inpaint_component
     
     #Main run
-    def run(self, p, gif_resize, gif_clear_frames, gif_common_seed, *args):
+    def run(self, p, gif_resize, gif_clear_frames, gif_common_seed):
         try:
             inp_gif = Image.open(self.gif_name)
         except:
@@ -168,7 +168,6 @@ class Script(scripts.Script):
         p.n_iter = 1 #we'll be processing iters per-gif-set
         outpath = os.path.join(p.outpath_samples, "gif2gif")
         print(f"Will process {gif_n_iter * p.batch_size} GIF(s) with {state.job_count * p.batch_size} total frames.")
-        
         #Iterate batch count
         for x in range(gif_n_iter):
             if state.skipped: state.skipped = False
@@ -182,9 +181,10 @@ class Script(scripts.Script):
                 if state.interrupted: break
                 state.job = f"{state.job_no + 1} out of {state.job_count}"
                 copy_p = copy.copy(p)
-                copy_p.init_images = [frame] * p.batch_size
-                proc = process_images(copy_p)
-                for pi in proc.images:
+                copy_p.init_images = [frame] * p.batch_size #inject current frame
+                copy_p.control_net_input_image = frame.convert("RGB") #account for controlnet
+                proc = process_images(copy_p) #process
+                for pi in proc.images: #Just in case another extension spits out a non-image (like controlnet)
                     if type(pi) is Image.Image:
                         inter_images.append(pi)
                 all_prompts += proc.all_prompts
