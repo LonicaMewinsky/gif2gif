@@ -8,7 +8,7 @@ import tempfile
 import random
 from PIL import Image, ImageSequence
 from modules.processing import Processed, process_images
-from modules.shared import state
+from modules.shared import state, sd_upscalers
 
 with open(os.path.join(scripts.basedir(), "instructions.txt"), 'r') as file:
     mkd_inst = file.read()
@@ -34,6 +34,21 @@ def interp(gif, iframes, dur):
     except:
         return False
 
+def upscale(image, upscaler_name, upscale_mode, upscale_by, upscale_to_width, upscale_to_height, upscale_crop):
+    if upscale_mode == 1:
+        upscale_by = max(upscale_to_width/image.width, upscale_to_height/image.height)
+    
+    upscaler = next(iter([x for x in sd_upscalers if x.name == upscaler_name]), None)
+    assert upscaler or (upscaler_name is None), f'could not find upscaler named {upscaler_name}'
+
+    image = upscaler.scaler.upscale(image, upscale_by, upscaler.data_path)
+    if upscale_mode == 1 and upscale_crop:
+        cropped = Image.new("RGB", (upscale_to_width, upscale_to_height))
+        cropped.paste(image, box=(upscale_to_width // 2 - image.width // 2, upscale_to_height // 2 - image.height // 2))
+        image = cropped
+
+    return image
+
 class Script(scripts.Script):
     def __init__(self):
         self.gif_name = str()
@@ -55,8 +70,9 @@ class Script(scripts.Script):
 
     def title(self):
         return "gif2gif"
-    def show(self, is_img2img):
-        return is_img2img
+
+    #def show(self, is_img2img):
+    #    return is_img2img
     
     def ui(self, is_img2img):
         #Controls
@@ -87,6 +103,23 @@ class Script(scripts.Script):
                                         frames_original = gr.Textbox(value="", interactive = False, label = "Original total frames")
             with gr.Tab("GIF Preview", open = False):
                 display_gif = gr.Image(inputs = upload_gif, Source="Upload", interactive=False, label = "Preview GIF", type= "filepath")
+            with gr.Tab("Upscaling"):
+                    with gr.Row():
+                        with gr.Column():
+                            with gr.Box():
+                                ups_upscaler = gr.Dropdown(value = "None", interactive = True, choices = [x.name for x in sd_upscalers], label = "Upscaler")
+                                ups_only_upscale = gr.Checkbox(value = False, label = "Skip generation, only upscale")
+                        with gr.Column():
+                            with gr.Tabs():
+                                with gr.Tab("Scale by") as tab_scale_by:
+                                    with gr.Box():   
+                                        ups_scale_by = gr.Slider(1, 8, step = 0.1, value=2, interactive = True, label = "Factor")
+                                with gr.Tab("Scale to") as tab_scale_to:
+                                    with gr.Box():
+                                        with gr.Column():
+                                            ups_scale_to_w = gr.Slider(0, 8000, step = 8, value=512, interactive = True, label = "Target width")
+                                            ups_scale_to_h = gr.Slider(0, 8000, step = 8, value=512, interactive = True, label = "Target height")
+                                            ups_scale_to_crop = gr.Checkbox(value = False, label = "Crop to fit")
             with gr.Tab("Readme", open = False):
                 gr.Markdown(mkd_inst)
         
@@ -113,6 +146,21 @@ class Script(scripts.Script):
                 print(f"Failed to load {gif.name}. Not a valid animated GIF?")
                 return None
 
+        def processgif_txt2img(gif):
+            try:
+                init_gif = Image.open(gif.name)
+                self.gif_name = gif.name
+                self.orig_dimensions = init_gif.size
+                self.orig_duration = init_gif.info["duration"]
+                self.orig_n_frames = init_gif.n_frames
+                self.orig_total_seconds = round((self.orig_duration * self.orig_n_frames)/1000, 2)
+                self.orig_fps = round(1000 / int(init_gif.info["duration"]), 2)
+                self.ready = True
+                return gif.name, self.orig_fps, self.orig_fps, (f"{self.orig_total_seconds} seconds"), self.orig_n_frames
+            except:
+                print(f"Failed to load {gif.name}. Not a valid animated GIF?")
+                return None
+
         def fpsupdate(fps, interp_frames):
             if (self.ready and fps and (interp_frames != None)):
                 self.desired_fps = fps
@@ -133,8 +181,15 @@ class Script(scripts.Script):
         #Control change events
         fps_slider.change(fn=fpsupdate, inputs = [fps_slider, interp_slider], outputs = [display_gif, fps_actual, seconds_actual, frames_actual])
         interp_slider.change(fn=fpsupdate, inputs = [fps_slider, interp_slider], outputs = [display_gif, fps_actual, seconds_actual, frames_actual])
-        upload_gif.upload(fn=processgif, inputs = upload_gif, outputs = [self.img2img_component, self.img2img_inpaint_component, display_gif, fps_slider, fps_original, seconds_original, frames_original])
-        return [gif_resize, gif_clear_frames, gif_common_seed]
+        ups_scale_mode = gr.State(value = 0)
+        tab_scale_by.select(fn=lambda: 0, inputs=[], outputs=[ups_scale_mode])
+        tab_scale_to.select(fn=lambda: 1, inputs=[], outputs=[ups_scale_mode])
+        if is_img2img:
+            upload_gif.upload(fn=processgif, inputs = upload_gif, outputs = [self.img2img_component, self.img2img_inpaint_component, display_gif, fps_slider, fps_original, seconds_original, frames_original])
+        else:
+            upload_gif.upload(fn=processgif_txt2img, inputs = upload_gif, outputs = [display_gif, fps_slider, fps_original, seconds_original, frames_original])
+        
+        return [gif_resize, gif_clear_frames, gif_common_seed, ups_upscaler, ups_only_upscale, ups_scale_mode, ups_scale_by, ups_scale_to_w, ups_scale_to_h, ups_scale_to_crop]
 
     #Grab the img2img image components for update later
     #Maybe there's a better way to do this?
@@ -147,30 +202,40 @@ class Script(scripts.Script):
             return self.img2img_inpaint_component
     
     #Main run
-    def run(self, p, gif_resize, gif_clear_frames, gif_common_seed):
+    def run(self, p, gif_resize, gif_clear_frames, gif_common_seed, ups_upscaler, ups_only_upscale, ups_scale_mode, ups_scale_by, ups_scale_to_w, ups_scale_to_h, ups_scale_to_crop):
         try:
             inp_gif = Image.open(self.gif_name)
+            inc_frames = [frame.convert("RGB") for frame in ImageSequence.Iterator(inp_gif)]
         except:
             print("Something went wrong with GIF. Processing still from img2img.")
             proc = process_images(p)
-            return proc        
+            return proc
+        outpath = os.path.join(p.outpath_samples, "gif2gif")
+        #Handle upscaling
+        if (ups_upscaler != "None"):
+            inc_frames = [upscale(frame, ups_upscaler, ups_scale_mode, ups_scale_by, ups_scale_to_w, ups_scale_to_h, ups_scale_to_crop) for frame in inc_frames]
+            if ups_only_upscale:
+                gif_filename = (modules.images.save_image(inp_gif, outpath, "gif2gif", extension = 'gif')[0])
+                print(f"gif2gif: Generating GIF to {gif_filename}..")
+                inc_frames[0].save(gif_filename,
+                    save_all = True, append_images = inc_frames[1:], loop = 0,
+                    optimize = False, duration = self.desired_duration)
+                return Processed(p, inc_frames)
         return_images, all_prompts, infotexts, inter_images = [], [], [], []
         state.job_count = inp_gif.n_frames * p.n_iter
         p.do_not_save_grid = True
         p.do_not_save_samples = gif_clear_frames
         gif_n_iter = p.n_iter
-        p.n_iter = 1 #we'll be processing iters per-gif-set
-        outpath = os.path.join(p.outpath_samples, "gif2gif")
+        p.n_iter = 1
         print(f"Will process {gif_n_iter * p.batch_size} GIF(s) with {state.job_count * p.batch_size} total frames.")
         #Iterate batch count
         for x in range(gif_n_iter):
             if state.skipped: state.skipped = False
             if state.interrupted: break
-            if(gif_common_seed and (p.seed == -1)):
-                p.seed = random.randrange(100000000, 999999999)
+            if(gif_common_seed and (p.seed == -1)): p.seed = random.randrange(100000000, 999999999)
             
             #Iterate frames
-            for frame in ImageSequence.Iterator(inp_gif):
+            for frame in inc_frames:
                 if state.skipped: state.skipped = False
                 if state.interrupted: break
                 state.job = f"{state.job_no + 1} out of {state.job_count}"
