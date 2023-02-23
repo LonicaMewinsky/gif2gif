@@ -26,6 +26,7 @@ The purpose of this script is to accept an animated gif as input, process frames
  - Clone this repo into your Automatic1111 WebUI /extensions folder, restart UI
  
 **Changelog:**
+- 2/23/23: Added upscaling support. Can possibly help with controlnet annotations.
 - 2/23/23: Updated UI, fixed a bug, extended support for "multi-model" controlnet.
 - 2/20/23: Fixed issue with first frame not working with controlnet extension.
 - 2/14/23: Now works, mostly, with https://github.com/Mikubill/sd-webui-controlnet extension.
