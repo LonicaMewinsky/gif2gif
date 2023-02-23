@@ -60,32 +60,35 @@ class Script(scripts.Script):
     
     def ui(self, is_img2img):
         #Controls
-        with gr.Box():    
-            with gr.Column():
-                upload_gif = gr.File(label="Upload GIF", file_types = ['.gif','.webp','.plc'], live=True, file_count = "single")
-                display_gif = gr.Image(inputs = upload_gif, visible = False, label = "Preview GIF", type= "filepath")
-                with gr.Row():
-                    with gr.Column():
-                        with gr.Box():
-                            fps_slider = gr.Slider(1, 50, step = 1, label = "Desired FPS")
-                            interp_slider = gr.Slider(label = "Interpolation frames", value = 0)
-                            gif_resize = gr.Checkbox(value = True, label="Resize result back to original dimensions")
-                            gif_clear_frames = gr.Checkbox(value = True, label="Delete intermediate frames after GIF generation")
-                            gif_common_seed = gr.Checkbox(value = True, label="For -1 seed, all frames in a GIF have common seed")
-                    with gr.Column():   
-                        with gr.Row():
+        with gr.Column():
+            upload_gif = gr.UploadButton(label="Upload GIF", file_types = ['.gif','.webp','.plc'], live=True, file_count = "single")
+        with gr.Tabs():
+            with gr.Tab("Settings"):
+                with gr.Column():
+                    with gr.Row():
+                        with gr.Column():
                             with gr.Box():
-                                with gr.Column():
-                                    fps_actual = gr.Textbox(value="", interactive = False, label = "Actual FPS")
-                                    seconds_actual = gr.Textbox(value="", interactive = False, label = "Actual total duration")
-                                    frames_actual = gr.Textbox(value="", interactive = False, label = "Actual total frames")
-                            with gr.Box():
-                                with gr.Column():
-                                    fps_original = gr.Textbox(value="", interactive = False, label = "Original FPS")
-                                    seconds_original = gr.Textbox(value="", interactive = False, label = "Original total duration")
-                                    frames_original = gr.Textbox(value="", interactive = False, label = "Original total frames")
-        with gr.Accordion("Click for Readme", open = False):
-            gr.Markdown(mkd_inst)
+                                fps_slider = gr.Slider(1, 50, step = 1, label = "Desired FPS")
+                                interp_slider = gr.Slider(label = "Interpolation frames", value = 0)
+                                gif_resize = gr.Checkbox(value = True, label="Resize result back to original dimensions")
+                                gif_clear_frames = gr.Checkbox(value = True, label="Delete intermediate frames after GIF generation")
+                                gif_common_seed = gr.Checkbox(value = True, label="For -1 seed, all frames in a GIF have common seed")
+                        with gr.Column():   
+                            with gr.Row():
+                                with gr.Box():
+                                    with gr.Column():
+                                        fps_actual = gr.Textbox(value="", interactive = False, label = "Actual FPS")
+                                        seconds_actual = gr.Textbox(value="", interactive = False, label = "Actual total duration")
+                                        frames_actual = gr.Textbox(value="", interactive = False, label = "Actual total frames")
+                                with gr.Box():
+                                    with gr.Column():
+                                        fps_original = gr.Textbox(value="", interactive = False, label = "Original FPS")
+                                        seconds_original = gr.Textbox(value="", interactive = False, label = "Original total duration")
+                                        frames_original = gr.Textbox(value="", interactive = False, label = "Original total frames")
+            with gr.Tab("GIF Preview", open = False):
+                display_gif = gr.Image(inputs = upload_gif, Source="Upload", interactive=False, label = "Preview GIF", type= "filepath")
+            with gr.Tab("Readme", open = False):
+                gr.Markdown(mkd_inst)
         
         #Control functions
         def processgif(gif):
@@ -105,17 +108,11 @@ class Script(scripts.Script):
                 self.orig_total_seconds = round((self.orig_duration * self.orig_n_frames)/1000, 2)
                 self.orig_fps = round(1000 / int(init_gif.info["duration"]), 2)
                 self.ready = True
-                return img_for_ui_path, img_for_ui_path, gif.name, gr.Image.update(visible = True), self.orig_fps, self.orig_fps, (f"{self.orig_total_seconds} seconds"), self.orig_n_frames
+                return img_for_ui_path, img_for_ui_path, gif.name, self.orig_fps, self.orig_fps, (f"{self.orig_total_seconds} seconds"), self.orig_n_frames
             except:
                 print(f"Failed to load {gif.name}. Not a valid animated GIF?")
                 return None
-        
-        def cleargif(up_val):
-            if (up_val == None):
-                self.gif_name = None
-                self.ready = False
-                return gr.Image.update(visible = False)        
-        
+
         def fpsupdate(fps, interp_frames):
             if (self.ready and fps and (interp_frames != None)):
                 self.desired_fps = fps
@@ -133,13 +130,10 @@ class Script(scripts.Script):
                 if interp:
                     interp(gifbuffer, self.desired_interp, self.desired_duration)
                 return gifbuffer, round(1000/self.desired_duration, 2), f"{self.desired_total_seconds} seconds", total_n_frames
-
         #Control change events
         fps_slider.change(fn=fpsupdate, inputs = [fps_slider, interp_slider], outputs = [display_gif, fps_actual, seconds_actual, frames_actual])
         interp_slider.change(fn=fpsupdate, inputs = [fps_slider, interp_slider], outputs = [display_gif, fps_actual, seconds_actual, frames_actual])
-        upload_gif.upload(fn=processgif, inputs = upload_gif, outputs = [self.img2img_component, self.img2img_inpaint_component, display_gif, display_gif, fps_slider, fps_original, seconds_original, frames_original])
-        upload_gif.change(fn=cleargif, inputs = upload_gif, outputs = display_gif)
-
+        upload_gif.upload(fn=processgif, inputs = upload_gif, outputs = [self.img2img_component, self.img2img_inpaint_component, display_gif, fps_slider, fps_original, seconds_original, frames_original])
         return [gif_resize, gif_clear_frames, gif_common_seed]
 
     #Grab the img2img image components for update later
