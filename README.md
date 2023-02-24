@@ -6,6 +6,7 @@ Automatic1111 Stable Diffusion WebUI GIF Extension
 The purpose of this script is to accept an animated gif as input, process frames as img2img typically would, and recombine them back into an animated gif. Intended to provide a fun, fast, gif-to-gif workflow that supports new models and methods such as InstructPix2Pix. Drop in a gif and go. Referenced code from prompts_from_file.
 
 **Instructions:**
+ - For ControlNet support, make sure to enable "Allow other script to control this extension" in settings.
  - img2img batch *count* and *size* represent completed GIFs, not individual images.
     - eg a gif with 30 frames, batch count of 2, batch size of 3, will result in 6 gifs (180 images).
  - Drop or select gif in the script's box; a preview should appear if it is a valid animated gif.
@@ -19,6 +20,7 @@ The purpose of this script is to accept an animated gif as input, process frames
 
 **Tips:**
  - Configure and process the gif in img2img (it'll use the first frame) before running the script. Find a good seed!
+ - If you add an image into ControlNet image window, it will default to that image for guidance for ALL frames.
  - Interpolation is not always necessary nor helpful.
 
 **Installation:**
@@ -26,6 +28,7 @@ The purpose of this script is to accept an animated gif as input, process frames
  - Clone this repo into your Automatic1111 WebUI /extensions folder, restart UI
  
 **Changelog:**
+- 2/24/23: Added loopback support. Less than 0.2 denoise recommended.
 - 2/23/23: Added upscaling support. Can possibly help with controlnet annotations.
 - 2/23/23: Updated UI, fixed a bug, extended support for "multi-model" controlnet.
 - 2/20/23: Fixed issue with first frame not working with controlnet extension.
