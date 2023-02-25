@@ -28,6 +28,7 @@ The purpose of this script is to accept an animated gif as input, process frames
  - Clone this repo into your Automatic1111 WebUI /extensions folder, restart UI
  
 **Changelog:**
+- 2/25/23: Added loopback denoise slider.
 - 2/24/23: Added loopback support. Less than 0.2 denoise recommended.
 - 2/23/23: Added upscaling support. Can possibly help with controlnet annotations.
 - 2/23/23: Updated UI, fixed a bug, extended support for "multi-model" controlnet.

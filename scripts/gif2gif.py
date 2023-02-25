@@ -87,6 +87,7 @@ class Script(scripts.Script):
                                 fps_slider = gr.Slider(1, 50, step = 1, label = "Desired FPS")
                                 interp_slider = gr.Slider(label = "Interpolation frames", value = 0)
                                 loop_backs = gr.Slider(0, 50, step = 1, label = "Generation loopbacks", value = 0)
+                                loop_denoise = gr.Slider(0.01, 1, step = 0.01, value=0.10, interactive = True, label = "Loopback denoise strength")
                                 gif_resize = gr.Checkbox(value = True, label="Resize result back to original dimensions")
                                 gif_clear_frames = gr.Checkbox(value = True, label="Delete intermediate frames after GIF generation")
                                 gif_common_seed = gr.Checkbox(value = True, label="For -1 seed, all frames in a GIF have common seed")
@@ -190,7 +191,7 @@ class Script(scripts.Script):
         else:
             upload_gif.upload(fn=processgif_txt2img, inputs = upload_gif, outputs = [display_gif, fps_slider, fps_original, seconds_original, frames_original])
         
-        return [gif_resize, gif_clear_frames, gif_common_seed, loop_backs, ups_upscaler, ups_only_upscale, ups_scale_mode, ups_scale_by, ups_scale_to_w, ups_scale_to_h, ups_scale_to_crop]
+        return [gif_resize, gif_clear_frames, gif_common_seed, loop_backs, loop_denoise, ups_upscaler, ups_only_upscale, ups_scale_mode, ups_scale_by, ups_scale_to_w, ups_scale_to_h, ups_scale_to_crop]
 
     #Grab the img2img image components for update later
     #Maybe there's a better way to do this?
@@ -203,7 +204,7 @@ class Script(scripts.Script):
             return self.img2img_inpaint_component
     
     #Main run
-    def run(self, p, gif_resize, gif_clear_frames, gif_common_seed, loop_backs, ups_upscaler, ups_only_upscale, ups_scale_mode, ups_scale_by, ups_scale_to_w, ups_scale_to_h, ups_scale_to_crop):
+    def run(self, p, gif_resize, gif_clear_frames, gif_common_seed, loop_backs, loop_denoise, ups_upscaler, ups_only_upscale, ups_scale_mode, ups_scale_by, ups_scale_to_w, ups_scale_to_h, ups_scale_to_crop):
         try:
             inp_gif = Image.open(self.gif_name)
             inc_frames = [frame.convert("RGB") for frame in ImageSequence.Iterator(inp_gif)]
@@ -251,6 +252,7 @@ class Script(scripts.Script):
                 #Do loopbacks
                 for _ in range(loop_backs):
                     copy_p.init_images = [proc.images[0].convert("RGB")] * p.batch_size
+                    copy_p.denoising_strength = loop_denoise
                     proc = process_images(copy_p)
                 for pi in proc.images: #Just in case another extension spits out a non-image (like controlnet)
                     if type(pi) is Image.Image:
