@@ -7,8 +7,8 @@ The purpose of this script is to accept an animated gif as input, process frames
 
 **Instructions:**
  - For ControlNet support, make sure to enable "Allow other script to control this extension" in settings.
- - img2img batch *count* and *size* represent completed GIFs, not individual images.
-    - eg a gif with 30 frames, batch count of 2, batch size of 3, will result in 6 gifs (180 images).
+ - img2img batch *count* represents completed GIFs, not individual images.
+ - All images in a single batch will be blended together. May help with consistency between frames.
  - Drop or select gif in the script's box; a preview should appear if it is a valid animated gif.
  - Inpainting works, but currently limited to one mask applied to all frames equally.
  - Adjust desired FPS if needed/wanted. Default slider position is original FPS.
@@ -28,6 +28,8 @@ The purpose of this script is to accept an animated gif as input, process frames
  - Clone this repo into your Automatic1111 WebUI /extensions folder, restart UI
  
 **Changelog:**
+- 2/26/23: Changed batch size functionality.
+- 2/26/23: Added loopback denoise decay slider.
 - 2/25/23: Added loopback denoise slider.
 - 2/24/23: Added loopback support. Less than 0.2 denoise recommended.
 - 2/23/23: Added upscaling support. Can possibly help with controlnet annotations.

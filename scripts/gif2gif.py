@@ -49,6 +49,20 @@ def upscale(image, upscaler_name, upscale_mode, upscale_by, upscale_to_width, up
 
     return image
 
+def blend_images(images):
+    print(len(images))
+    sizes = [img.size for img in images]
+    min_width, min_height = min(sizes, key=lambda s: s[0]*s[1])
+    blended_img = Image.new('RGB', (min_width, min_height))
+    
+    for x in range(min_width):
+        for y in range(min_height):
+            colors = [img.getpixel((x, y)) for img in images]
+            avg_color = tuple(int(sum(c[i] for c in colors) / len(colors)) for i in range(3))
+            blended_img.putpixel((x, y), avg_color)
+    
+    return blended_img
+
 class Script(scripts.Script):
     def __init__(self):
         self.gif_name = str()
@@ -66,6 +80,10 @@ class Script(scripts.Script):
         self.gif2gifdir = tempfile.TemporaryDirectory()
         self.img2img_component = gr.Image()
         self.img2img_inpaint_component = gr.Image()
+        self.txt2img_w_slider = gr.Slider()
+        self.txt2img_h_slider = gr.Slider()
+        self.img2img_w_slider = gr.Slider()
+        self.img2img_h_slider = gr.Slider()
         return None
 
     def title(self):
@@ -86,8 +104,6 @@ class Script(scripts.Script):
                             with gr.Box():
                                 fps_slider = gr.Slider(1, 50, step = 1, label = "Desired FPS")
                                 interp_slider = gr.Slider(label = "Interpolation frames", value = 0)
-                                loop_backs = gr.Slider(0, 50, step = 1, label = "Generation loopbacks", value = 0)
-                                loop_denoise = gr.Slider(0.01, 1, step = 0.01, value=0.10, interactive = True, label = "Loopback denoise strength")
                                 gif_resize = gr.Checkbox(value = True, label="Resize result back to original dimensions")
                                 gif_clear_frames = gr.Checkbox(value = True, label="Delete intermediate frames after GIF generation")
                                 gif_common_seed = gr.Checkbox(value = True, label="For -1 seed, all frames in a GIF have common seed")
@@ -105,6 +121,10 @@ class Script(scripts.Script):
                                         frames_original = gr.Textbox(value="", interactive = False, label = "Original total frames")
             with gr.Tab("GIF Preview", open = False):
                 display_gif = gr.Image(inputs = upload_gif, Source="Upload", interactive=False, label = "Preview GIF", type= "filepath")
+            with gr.Tab("Loopback"):
+                loop_backs = gr.Slider(0, 50, step = 1, label = "Generation loopbacks", value = 0)
+                loop_denoise = gr.Slider(0.01, 1, step = 0.01, value=0.10, interactive = True, label = "Loopback denoise strength")
+                loop_decay = gr.Slider(0, 2, step = 0.05, value=1.0, interactive = True, label = "Loopback decay")
             with gr.Tab("Upscaling"):
                     with gr.Row():
                         with gr.Column():
@@ -190,8 +210,7 @@ class Script(scripts.Script):
             upload_gif.upload(fn=processgif, inputs = upload_gif, outputs = [self.img2img_component, self.img2img_inpaint_component, display_gif, fps_slider, fps_original, seconds_original, frames_original])
         else:
             upload_gif.upload(fn=processgif_txt2img, inputs = upload_gif, outputs = [display_gif, fps_slider, fps_original, seconds_original, frames_original])
-        
-        return [gif_resize, gif_clear_frames, gif_common_seed, loop_backs, loop_denoise, ups_upscaler, ups_only_upscale, ups_scale_mode, ups_scale_by, ups_scale_to_w, ups_scale_to_h, ups_scale_to_crop]
+        return [gif_resize, gif_clear_frames, gif_common_seed, loop_backs, loop_denoise, loop_decay, ups_upscaler, ups_only_upscale, ups_scale_mode, ups_scale_by, ups_scale_to_w, ups_scale_to_h, ups_scale_to_crop]
 
     #Grab the img2img image components for update later
     #Maybe there's a better way to do this?
@@ -204,7 +223,7 @@ class Script(scripts.Script):
             return self.img2img_inpaint_component
     
     #Main run
-    def run(self, p, gif_resize, gif_clear_frames, gif_common_seed, loop_backs, loop_denoise, ups_upscaler, ups_only_upscale, ups_scale_mode, ups_scale_by, ups_scale_to_w, ups_scale_to_h, ups_scale_to_crop):
+    def run(self, p, gif_resize, gif_clear_frames, gif_common_seed, loop_backs, loop_denoise, loop_decay, ups_upscaler, ups_only_upscale, ups_scale_mode, ups_scale_by, ups_scale_to_w, ups_scale_to_h, ups_scale_to_crop):
         try:
             inp_gif = Image.open(self.gif_name)
             inc_frames = [frame.convert("RGB") for frame in ImageSequence.Iterator(inp_gif)]
@@ -234,51 +253,57 @@ class Script(scripts.Script):
         p.n_iter = 1
 
         #Iterate batch count
-        print(f"Will process {gif_n_iter * p.batch_size} GIF(s) with {state.job_count * p.batch_size} total generations.")
+        print(f"Will process {gif_n_iter} GIF(s) with {state.job_count * p.batch_size} total generations.")
         for x in range(gif_n_iter):
             if state.skipped: state.skipped = False
             if state.interrupted: break
-            if(gif_common_seed and (p.seed == -1)): p.seed = random.randrange(100000000, 999999999) #written to infotext
+            copy_p = copy.copy(p)
+            color_correction = [modules.processing.setup_color_correction(copy_p.init_images[0])]
+            if(gif_common_seed and (p.seed == -1)):
+                modules.processing.fix_seed(copy_p)
             
             #Iterate frames
             for frame in inc_frames:
                 if state.skipped: state.skipped = False
                 if state.interrupted: break
+                copy_p.denoising_strength = p.denoising_strength #reset denoise
+                frame_loop_denoise = loop_denoise
                 state.job = f"{state.job_no + 1} out of {state.job_count}"
-                copy_p = copy.copy(p)
                 copy_p.init_images = [frame] * p.batch_size #inject current frame
                 copy_p.control_net_input_image = frame.convert("RGB") #account for controlnet
                 proc = process_images(copy_p) #process
                 #Do loopbacks
                 for _ in range(loop_backs):
                     copy_p.init_images = [proc.images[0].convert("RGB")] * p.batch_size
-                    copy_p.denoising_strength = loop_denoise
+                    copy_p.color_corrections = color_correction
+                    copy_p.denoising_strength = frame_loop_denoise
                     proc = process_images(copy_p)
-                for pi in proc.images: #Just in case another extension spits out a non-image (like controlnet)
+                    frame_loop_denoise = round(frame_loop_denoise*loop_decay, 2)
+                #Handle batches
+                proc_batch = []
+                for pi in proc.images:
                     if type(pi) is Image.Image:
-                        inter_images.append(pi)
+                        proc_batch.append(pi)
+                if len(proc_batch) > 1:
+                    inter_images.append(blend_images(proc_batch))
+                else:
+                    inter_images.append(proc_batch[0])
                 all_prompts += proc.all_prompts
                 infotexts += proc.infotexts
+            #Resize and make gif
             if(gif_resize):
                 for i in range(len(inter_images)):
                     inter_images[i] = inter_images[i].resize(self.orig_dimensions)
-            
-            #Separate frames by batch size
-            inter_batch = []
-            for b in range(p.batch_size):
-                for bi in inter_images[(b)::p.batch_size]:
-                    inter_batch.append(bi)
-                #First make temporary file via save_images, then save actual gif over it..
-                #Probably a better way to do this, but this easily maintains file name and .txt file logic
-                gif_filename = (modules.images.save_image(inp_gif, outpath, "gif2gif", extension = 'gif', info = infotexts[b])[0])
-                print(f"gif2gif: Generating GIF to {gif_filename}..")
-                inter_batch[0].save(gif_filename,
-                    save_all = True, append_images = inter_batch[1:], loop = 0,
-                    optimize = False, duration = self.desired_duration)
-                if(self.desired_interp > 0):
-                    print(f"gif2gif: Interpolating {gif_filename}..")
-                    interp(gif_filename, self.desired_interp, self.desired_duration)
-                return_images.extend(inter_batch)
-                inter_batch = []
-            inter_images = []
+            #First make temporary file via save_images, then save actual gif over it..
+            #Probably a better way to do this, but this easily maintains file name and .txt file logic
+            gif_filename = (modules.images.save_image(inp_gif, outpath, "gif2gif", extension = 'gif', info = infotexts[0])[0])
+            print(f"gif2gif: Generating GIF to {gif_filename}..")
+            inter_images[0].save(gif_filename,
+                save_all = True, append_images = inter_images[1:], loop = 0,
+                optimize = False, duration = self.desired_duration)
+            if(self.desired_interp > 0):
+                print(f"gif2gif: Interpolating {gif_filename}..")
+                interp(gif_filename, self.desired_interp, self.desired_duration)
+            return_images.extend(inter_images)
+        inter_images = []
         return Processed(p, return_images, p.seed, "", all_prompts=all_prompts, infotexts=infotexts)
