@@ -50,7 +50,6 @@ def upscale(image, upscaler_name, upscale_mode, upscale_by, upscale_to_width, up
     return image
 
 def blend_images(images):
-    print(len(images))
     sizes = [img.size for img in images]
     min_width, min_height = min(sizes, key=lambda s: s[0]*s[1])
     blended_img = Image.new('RGB', (min_width, min_height))
