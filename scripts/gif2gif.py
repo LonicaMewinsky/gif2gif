@@ -88,8 +88,8 @@ class Script(scripts.Script):
     def title(self):
         return "gif2gif"
 
-    #def show(self, is_img2img):
-    #    return is_img2img
+    def show(self, is_img2img):
+        return is_img2img
     
     def ui(self, is_img2img):
         #Controls
