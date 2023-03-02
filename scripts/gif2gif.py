@@ -147,28 +147,28 @@ class Script(scripts.Script):
         
         #Control functions
         def processgif(gif):
-            try:
-                init_gif = Image.open(gif.name)
-                self.gif_name = gif.name
-                self.orig_dimensions = init_gif.size
-                self.orig_duration = init_gif.info["duration"]
-                self.orig_n_frames = init_gif.n_frames
-                self.orig_total_seconds = round((self.orig_duration * self.orig_n_frames)/1000, 2)
-                self.orig_fps = round(1000 / int(init_gif.info["duration"]), 2)
-                #Need to also put images in img2img/inpainting windows (ui will not run without)
-                #Gradio painting tools act weird with smaller images.. resize to 480 if smaller
-                self.gif_frames = []
-                for frame in ImageSequence.Iterator(init_gif):
-                    if frame.height < 480:
-                        converted = frame.resize((round(480*frame.width/frame.height), 480), Image.Resampling.LANCZOS).convert('RGBA')
-                    else:
-                        converted = converted.convert('RGBA')
-                    self.gif_frames.append(converted)
-                self.ready = True
-                return self.gif_frames[0], blend_images(self.gif_frames), gif.name, self.orig_fps, self.orig_fps, (f"{self.orig_total_seconds} seconds"), self.orig_n_frames
-            except:
-                print(f"Failed to load {gif.name}. Not a valid animated GIF?")
-                return None
+            #try:
+            init_gif = Image.open(gif.name)
+            self.gif_name = gif.name
+            self.orig_dimensions = init_gif.size
+            self.orig_duration = init_gif.info["duration"]
+            self.orig_n_frames = init_gif.n_frames
+            self.orig_total_seconds = round((self.orig_duration * self.orig_n_frames)/1000, 2)
+            self.orig_fps = round(1000 / int(init_gif.info["duration"]), 2)
+            #Need to also put images in img2img/inpainting windows (ui will not run without)
+            #Gradio painting tools act weird with smaller images.. resize to 480 if smaller
+            self.gif_frames = []
+            for frame in ImageSequence.Iterator(init_gif):
+                if frame.height < 480:
+                    converted = frame.resize((round(480*frame.width/frame.height), 480), Image.Resampling.LANCZOS).convert('RGBA')
+                else:
+                    converted = frame.convert('RGBA')
+                self.gif_frames.append(converted)
+            self.ready = True
+            return self.gif_frames[0], blend_images(self.gif_frames), gif.name, self.orig_fps, self.orig_fps, (f"{self.orig_total_seconds} seconds"), self.orig_n_frames
+            #except:
+            #    print(f"Failed to load {gif.name}. Not a valid animated GIF?")
+            #    return None
 
         def fpsupdate(fps, interp_frames):
             if (self.ready and fps and (interp_frames != None)):
