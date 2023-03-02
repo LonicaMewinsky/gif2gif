@@ -65,6 +65,7 @@ def blend_images(images):
 class Script(scripts.Script):
     def __init__(self):
         self.gif_name = str()
+        self.gif_frames = []
         self.orig_fps = 0
         self.orig_duration = 0
         self.orig_total_seconds = 0
@@ -149,35 +150,22 @@ class Script(scripts.Script):
             try:
                 init_gif = Image.open(gif.name)
                 self.gif_name = gif.name
+                self.orig_dimensions = init_gif.size
+                self.orig_duration = init_gif.info["duration"]
+                self.orig_n_frames = init_gif.n_frames
+                self.orig_total_seconds = round((self.orig_duration * self.orig_n_frames)/1000, 2)
+                self.orig_fps = round(1000 / int(init_gif.info["duration"]), 2)
                 #Need to also put images in img2img/inpainting windows (ui will not run without)
                 #Gradio painting tools act weird with smaller images.. resize to 480 if smaller
-                img_for_ui_path = (f"{self.gif2gifdir.name}/imgforui.gif")
-                img_for_ui = init_gif
-                if img_for_ui.height < 480:
-                    img_for_ui = img_for_ui.resize((round(480*img_for_ui.width/img_for_ui.height), 480), Image.Resampling.LANCZOS)
-                img_for_ui.save(img_for_ui_path)
-                self.orig_dimensions = init_gif.size
-                self.orig_duration = init_gif.info["duration"]
-                self.orig_n_frames = init_gif.n_frames
-                self.orig_total_seconds = round((self.orig_duration * self.orig_n_frames)/1000, 2)
-                self.orig_fps = round(1000 / int(init_gif.info["duration"]), 2)
+                self.gif_frames = []
+                for frame in ImageSequence.Iterator(init_gif):
+                    if frame.height < 480:
+                        converted = frame.resize((round(480*frame.width/frame.height), 480), Image.Resampling.LANCZOS).convert('RGBA')
+                    else:
+                        converted = converted.convert('RGBA')
+                    self.gif_frames.append(converted)
                 self.ready = True
-                return img_for_ui_path, img_for_ui_path, gif.name, self.orig_fps, self.orig_fps, (f"{self.orig_total_seconds} seconds"), self.orig_n_frames
-            except:
-                print(f"Failed to load {gif.name}. Not a valid animated GIF?")
-                return None
-
-        def processgif_txt2img(gif):
-            try:
-                init_gif = Image.open(gif.name)
-                self.gif_name = gif.name
-                self.orig_dimensions = init_gif.size
-                self.orig_duration = init_gif.info["duration"]
-                self.orig_n_frames = init_gif.n_frames
-                self.orig_total_seconds = round((self.orig_duration * self.orig_n_frames)/1000, 2)
-                self.orig_fps = round(1000 / int(init_gif.info["duration"]), 2)
-                self.ready = True
-                return gif.name, self.orig_fps, self.orig_fps, (f"{self.orig_total_seconds} seconds"), self.orig_n_frames
+                return self.gif_frames[0], blend_images(self.gif_frames), gif.name, self.orig_fps, self.orig_fps, (f"{self.orig_total_seconds} seconds"), self.orig_n_frames
             except:
                 print(f"Failed to load {gif.name}. Not a valid animated GIF?")
                 return None
@@ -194,10 +182,9 @@ class Script(scripts.Script):
                 self.desired_duration = calcdur
                 self.desired_total_seconds = round((self.desired_duration * total_n_frames)/1000, 2)
                 gifbuffer = (f"{self.gif2gifdir.name}/previewgif.gif")
-                previewgif = Image.open(self.gif_name)
-                previewgif.save(gifbuffer, format="GIF", save_all=True, duration=self.desired_duration, loop=0)
-                if interp:
-                    interp(gifbuffer, self.desired_interp, self.desired_duration)
+                self.gif_frames[0].save(gifbuffer,
+                    save_all = True, append_images = self.gif_frames[1:], loop = 0,
+                    optimize = False, duration = self.desired_duration)
                 return gifbuffer, round(1000/self.desired_duration, 2), f"{self.desired_total_seconds} seconds", total_n_frames
         #Control change events
         fps_slider.change(fn=fpsupdate, inputs = [fps_slider, interp_slider], outputs = [display_gif, fps_actual, seconds_actual, frames_actual])
@@ -205,10 +192,7 @@ class Script(scripts.Script):
         ups_scale_mode = gr.State(value = 0)
         tab_scale_by.select(fn=lambda: 0, inputs=[], outputs=[ups_scale_mode])
         tab_scale_to.select(fn=lambda: 1, inputs=[], outputs=[ups_scale_mode])
-        if is_img2img:
-            upload_gif.upload(fn=processgif, inputs = upload_gif, outputs = [self.img2img_component, self.img2img_inpaint_component, display_gif, fps_slider, fps_original, seconds_original, frames_original])
-        else:
-            upload_gif.upload(fn=processgif_txt2img, inputs = upload_gif, outputs = [display_gif, fps_slider, fps_original, seconds_original, frames_original])
+        upload_gif.upload(fn=processgif, inputs = upload_gif, outputs = [self.img2img_component, self.img2img_inpaint_component, display_gif, fps_slider, fps_original, seconds_original, frames_original])
         return [gif_resize, gif_clear_frames, gif_common_seed, loop_backs, loop_denoise, loop_decay, ups_upscaler, ups_only_upscale, ups_scale_mode, ups_scale_by, ups_scale_to_w, ups_scale_to_h, ups_scale_to_crop]
 
     #Grab the img2img image components for update later
@@ -224,8 +208,7 @@ class Script(scripts.Script):
     #Main run
     def run(self, p, gif_resize, gif_clear_frames, gif_common_seed, loop_backs, loop_denoise, loop_decay, ups_upscaler, ups_only_upscale, ups_scale_mode, ups_scale_by, ups_scale_to_w, ups_scale_to_h, ups_scale_to_crop):
         try:
-            inp_gif = Image.open(self.gif_name)
-            inc_frames = [frame.convert("RGB") for frame in ImageSequence.Iterator(inp_gif)]
+            inc_frames = self.gif_frames
         except:
             print("Something went wrong with GIF. Processing still from img2img.")
             proc = process_images(p)
@@ -236,7 +219,7 @@ class Script(scripts.Script):
         if (ups_upscaler != "None"):
             inc_frames = [upscale(frame, ups_upscaler, ups_scale_mode, ups_scale_by, ups_scale_to_w, ups_scale_to_h, ups_scale_to_crop) for frame in inc_frames]
             if ups_only_upscale:
-                gif_filename = (modules.images.save_image(inp_gif, outpath, "gif2gif", extension = 'gif')[0])
+                gif_filename = (modules.images.save_image(inc_frames[0], outpath, "gif2gif", extension = 'gif')[0])
                 print(f"gif2gif: Generating GIF to {gif_filename}..")
                 inc_frames[0].save(gif_filename,
                     save_all = True, append_images = inc_frames[1:], loop = 0,
@@ -245,7 +228,7 @@ class Script(scripts.Script):
         
         #Fix/setup vars
         return_images, all_prompts, infotexts, inter_images = [], [], [], []
-        state.job_count = inp_gif.n_frames * p.n_iter * (loop_backs+1)
+        state.job_count = self.orig_n_frames * p.n_iter * (loop_backs+1)
         p.do_not_save_grid = True
         p.do_not_save_samples = gif_clear_frames
         gif_n_iter = p.n_iter
@@ -295,7 +278,7 @@ class Script(scripts.Script):
                     inter_images[i] = inter_images[i].resize(self.orig_dimensions)
             #First make temporary file via save_images, then save actual gif over it..
             #Probably a better way to do this, but this easily maintains file name and .txt file logic
-            gif_filename = (modules.images.save_image(inp_gif, outpath, "gif2gif", extension = 'gif', info = infotexts[0])[0])
+            gif_filename = (modules.images.save_image(inc_frames[0], outpath, "gif2gif", extension = 'gif', info = infotexts[0])[0])
             print(f"gif2gif: Generating GIF to {gif_filename}..")
             inter_images[0].save(gif_filename,
                 save_all = True, append_images = inter_images[1:], loop = 0,
