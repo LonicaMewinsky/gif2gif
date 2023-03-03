@@ -8,7 +8,7 @@ import tempfile
 import random
 from PIL import Image, ImageSequence
 from modules.processing import Processed, process_images
-from modules.shared import state, sd_upscalers
+from modules.shared import opts, state, sd_upscalers
 
 with open(os.path.join(scripts.basedir(), "instructions.txt"), 'r') as file:
     mkd_inst = file.read()
@@ -310,16 +310,20 @@ class Script(scripts.Script):
             if(gif_resize):
                 for i in range(len(inter_images)):
                     inter_images[i] = inter_images[i].resize(self.orig_dimensions)
-            #First make temporary file via save_images, then save actual gif over it.
-            gif_filename = (modules.images.save_image(inc_frames[0], outpath, "gif2gif", extension = 'gif', info = infotexts[0])[0])
+            #First make temporary file via save_images, then save actual gif over it. First index returns path.
+            gif_filename = (modules.images.save_image(inc_frames[0], outpath, "gif2gif", extension = 'gif')[0])
+            #Handle infotext embedding
+            gif_info=""
+            if opts.enable_pnginfo and infotexts[0] is not None:
+                gif_info = infotexts[0].replace('\n', ', ')
+            #Generate animation
             print(f"gif2gif: Generating GIF to {gif_filename}..")
             inter_images[0].save(gif_filename,
                 save_all = True, append_images = inter_images[1:], loop = 0,
-                optimize = False, duration = self.desired_duration)
+                optimize = False, duration = self.desired_duration, comment=gif_info)
             if(self.desired_interp > 0):
                 print(f"gif2gif: Interpolating {gif_filename}..")
                 interp(gif_filename, self.desired_interp, self.desired_duration)
-            
             if not gif_clear_frames:
                 return_images.extend(inter_images)
             return_images.append(Image.open(gif_filename))
