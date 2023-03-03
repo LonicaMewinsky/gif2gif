@@ -28,6 +28,7 @@ The purpose of this script is to accept an animated gif as input, process frames
  - Clone this repo into your Automatic1111 WebUI /extensions folder, restart UI
  
 **Changelog:**
+- 3/02/23: Changed inpainting functionality -- blends frames for better representation.
 - 2/26/23: Changed batch size functionality.
 - 2/26/23: Added loopback denoise decay slider.
 - 2/25/23: Added loopback denoise slider.
@@ -39,8 +40,8 @@ The purpose of this script is to accept an animated gif as input, process frames
 - 2/10/23: Updated inpainting window to behave more predictably
 - 2/10/23: Fixed inpainting window odd behavior on images smaller than 480h
 
-![image](https://user-images.githubusercontent.com/93007558/216690484-d3679737-c179-46c9-8fd9-860816601451.png)
-
+![werk-it](https://user-images.githubusercontent.com/93007558/222612353-36db8c42-38ba-42cc-8fb5-da59ab875ee4.gif)
+![image](https://user-images.githubusercontent.com/93007558/222612321-74832002-6b3f-4022-ac0c-b6e93acebabe.png)
 ![R](https://user-images.githubusercontent.com/93007558/216517487-542271b1-6fdb-4e54-a261-e500f5cc5c7a.gif)![download](https://user-images.githubusercontent.com/93007558/216803715-81dfc9e6-8c9a-47d5-9879-27acfac34eb8.gif)
 
 ![source](https://user-images.githubusercontent.com/93007558/216689956-4740b35e-aa2c-4869-955c-27836b56a378.gif)![gif2gif-0052](https://user-images.githubusercontent.com/93007558/216690052-6694989a-b2cb-42a8-a1d4-fc0ebd42776b.gif)
