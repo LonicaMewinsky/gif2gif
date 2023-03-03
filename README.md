@@ -29,6 +29,7 @@ The purpose of this script is to accept an animated gif as input, process frames
  - Clone this repo into your Automatic1111 WebUI /extensions folder, restart UI
  
 **Changelog:**
+- 3/03/23: Added support for embedding generation into into GIF
 - 3/03/23: Blended inpainting picture had major performance issues on some systems; made optional.
 - 3/02/23: Changed inpainting functionality -- blends frames for better representation.
 - 2/26/23: Changed batch size functionality.
