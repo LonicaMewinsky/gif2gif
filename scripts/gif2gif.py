@@ -101,6 +101,8 @@ class Script(scripts.Script):
     
     def ui(self, is_img2img):
         #Controls
+        with gr.Column():
+            upload_gif = gr.File(label="Upload GIF", visible=True, file_types = ['.gif','.webp','.plc'], file_count = "single")        
         with gr.Tabs():
             with gr.Tab("Settings"):
                 with gr.Column():
@@ -151,7 +153,6 @@ class Script(scripts.Script):
             with gr.Tab("Readme", open = False):
                 gr.Markdown(mkd_inst)
         with gr.Column():
-            upload_gif = gr.File(label="Upload GIF", visible=True, file_types = ['.gif','.webp','.plc'], file_count = "single")
             display_gif = gr.Image(label = "Preview GIF", Source="Upload", visible=False, interactive=True, type="filepath")
 
         def processgif(file):
@@ -204,6 +205,9 @@ class Script(scripts.Script):
                 return gifbuffer, round(1000/self.desired_duration, 2), f"{self.desired_total_seconds} seconds", total_n_frames
         
         def send_blend():
+            if self.gif_frames == None:
+                print("No loaded; cannot blend")
+                return gr.Image.update()
             blend = blend_images(self.gif_frames)
             return blend
         
