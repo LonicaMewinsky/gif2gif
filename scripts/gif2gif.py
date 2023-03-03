@@ -34,6 +34,14 @@ def interp(gif, iframes, dur):
     except:
         return False
 
+#Get num closest to 8
+def cl8(num):
+    rem = num % 8
+    if rem <= 4:
+        return round(num - rem)
+    else:
+        return round(num + (8 - rem))
+
 def upscale(image, upscaler_name, upscale_mode, upscale_by, upscale_to_width, upscale_to_height, upscale_crop):
     if upscale_mode == 1:
         upscale_by = max(upscale_to_width/image.width, upscale_to_height/image.height)
@@ -81,8 +89,6 @@ class Script(scripts.Script):
         self.img2img_component = gr.Image()
         self.img2img_inpaint_component = gr.Image()
         self.img2img_gallery = gr.Gallery()
-        self.txt2img_w_slider = gr.Slider()
-        self.txt2img_h_slider = gr.Slider()
         self.img2img_w_slider = gr.Slider()
         self.img2img_h_slider = gr.Slider()
         return None
@@ -95,8 +101,6 @@ class Script(scripts.Script):
     
     def ui(self, is_img2img):
         #Controls
-        with gr.Column():
-            upload_gif = gr.UploadButton(label="Upload GIF", file_types = ['.gif','.webp','.plc'], live=True, file_count = "single")
         with gr.Tabs():
             with gr.Tab("Settings"):
                 with gr.Column():
@@ -120,8 +124,6 @@ class Script(scripts.Script):
                                         fps_original = gr.Textbox(value="", interactive = False, label = "Original FPS")
                                         seconds_original = gr.Textbox(value="", interactive = False, label = "Original total duration")
                                         frames_original = gr.Textbox(value="", interactive = False, label = "Original total frames")
-            with gr.Tab("GIF Preview", open = False):
-                display_gif = gr.Image(inputs = upload_gif, Source="Upload", interactive=False, label = "Preview GIF", type= "filepath")
             with gr.Tab("Loopback"):
                 loop_backs = gr.Slider(0, 50, step = 1, label = "Generation loopbacks", value = 0)
                 loop_denoise = gr.Slider(0.01, 1, step = 0.01, value=0.10, interactive = True, label = "Loopback denoise strength")
@@ -143,14 +145,23 @@ class Script(scripts.Script):
                                             ups_scale_to_w = gr.Slider(0, 8000, step = 8, value=512, interactive = True, label = "Target width")
                                             ups_scale_to_h = gr.Slider(0, 8000, step = 8, value=512, interactive = True, label = "Target height")
                                             ups_scale_to_crop = gr.Checkbox(value = False, label = "Crop to fit")
+            with gr.Tab("Inpainting", open = False):
+                with gr.Column():
+                    make_blend = gr.Button("Send blended image to img2img Inpainting tab")
             with gr.Tab("Readme", open = False):
                 gr.Markdown(mkd_inst)
-        
-        #Control functions
-        def processgif(gif):
-            #try:
-            init_gif = Image.open(gif.name)
-            self.gif_name = gif.name
+        with gr.Column():
+            upload_gif = gr.File(label="Upload GIF", visible=True, file_types = ['.gif','.webp','.plc'], file_count = "single")
+            display_gif = gr.Image(label = "Preview GIF", Source="Upload", visible=False, interactive=True, type="filepath")
+
+        def processgif(file):
+            try:
+                pimg = ImageSequence.Iterator(Image.open(file.name))[0]
+            except:
+                print("Could not load GIF.") #Make no changes
+                return gr.Image.update(), gr.Image.update(), gr.Image.update(), gr.Slider.update(), gr.Textbox.update(), gr.Textbox.update(), gr.Textbox.update()
+            init_gif = Image.open(file.name)
+            self.gif_name = file.name
             self.orig_dimensions = init_gif.size
             self.orig_duration = init_gif.info["duration"]
             self.orig_n_frames = init_gif.n_frames
@@ -166,12 +177,15 @@ class Script(scripts.Script):
                     converted = frame.convert('RGBA')
                 self.gif_frames.append(converted)
             self.ready = True
-            self.img2img_gallery.update([gif.name])
-            return self.gif_frames[0], blend_images(self.gif_frames), gif.name, self.orig_fps, self.orig_fps, (f"{self.orig_total_seconds} seconds"), self.orig_n_frames
-            #except:
-            #    print(f"Failed to load {gif.name}. Not a valid animated GIF?")
-            #    return None
+            self.img2img_gallery.update([file.name])
+            return self.gif_frames[0], self.gif_frames[0], cl8(pimg.width), cl8(pimg.height), gr.File.update(visible=False), gr.Image.update(value=file.name, visible=True), self.orig_fps, self.orig_fps, (f"{self.orig_total_seconds} seconds"), self.orig_n_frames
 
+        def clear_gif(gif):
+            if gif == None:
+                return None, None, gr.File.update(value=None, visible=True), gr.Image.update(visible=False)
+            else:
+                return gr.Image.update(), gr.Image.update(), gr.File.update(), gr.Image.update()  
+            
         def fpsupdate(fps, interp_frames):
             if (self.ready and fps and (interp_frames != None)):
                 self.desired_fps = fps
@@ -188,13 +202,21 @@ class Script(scripts.Script):
                     save_all = True, append_images = self.gif_frames[1:], loop = 0,
                     optimize = False, duration = self.desired_duration)
                 return gifbuffer, round(1000/self.desired_duration, 2), f"{self.desired_total_seconds} seconds", total_n_frames
+        
+        def send_blend():
+            blend = blend_images(self.gif_frames)
+            return blend
+        
         #Control change events
         fps_slider.change(fn=fpsupdate, inputs = [fps_slider, interp_slider], outputs = [display_gif, fps_actual, seconds_actual, frames_actual])
         interp_slider.change(fn=fpsupdate, inputs = [fps_slider, interp_slider], outputs = [display_gif, fps_actual, seconds_actual, frames_actual])
         ups_scale_mode = gr.State(value = 0)
         tab_scale_by.select(fn=lambda: 0, inputs=[], outputs=[ups_scale_mode])
         tab_scale_to.select(fn=lambda: 1, inputs=[], outputs=[ups_scale_mode])
-        upload_gif.upload(fn=processgif, inputs = upload_gif, outputs = [self.img2img_component, self.img2img_inpaint_component, display_gif, fps_slider, fps_original, seconds_original, frames_original])
+        upload_gif.upload(fn=processgif, inputs = upload_gif, outputs = [self.img2img_component, self.img2img_inpaint_component, self.img2img_w_slider, self.img2img_h_slider, upload_gif, display_gif, fps_slider, fps_original, seconds_original, frames_original])
+        display_gif.change(fn=clear_gif, inputs=display_gif, outputs=[self.img2img_component, self.img2img_inpaint_component, upload_gif, display_gif])
+        make_blend.click(fn=send_blend, inputs=None, outputs=[self.img2img_inpaint_component])
+
         return [gif_resize, gif_clear_frames, gif_common_seed, loop_backs, loop_denoise, loop_decay, ups_upscaler, ups_only_upscale, ups_scale_mode, ups_scale_by, ups_scale_to_w, ups_scale_to_h, ups_scale_to_crop]
 
     #Grab the img2img image components for update later
@@ -206,9 +228,13 @@ class Script(scripts.Script):
         if component.elem_id == "img2maskimg":
             self.img2img_inpaint_component = component
             return self.img2img_inpaint_component
-        if component.elem_id == "img2img_gallery":
-            self.img2img_gallery = component
-            return self.img2img_gallery
+        if component.elem_id == "img2img_width":
+            self.img2img_w_slider = component
+            return self.img2img_w_slider
+        if component.elem_id == "img2img_height":
+            self.img2img_h_slider = component
+            return self.img2img_h_slider
+        
     #Main run
     def run(self, p, gif_resize, gif_clear_frames, gif_common_seed, loop_backs, loop_denoise, loop_decay, ups_upscaler, ups_only_upscale, ups_scale_mode, ups_scale_by, ups_scale_to_w, ups_scale_to_h, ups_scale_to_crop):
         try:
