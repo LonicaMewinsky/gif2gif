@@ -80,6 +80,7 @@ class Script(scripts.Script):
         self.gif2gifdir = tempfile.TemporaryDirectory()
         self.img2img_component = gr.Image()
         self.img2img_inpaint_component = gr.Image()
+        self.img2img_gallery = gr.Gallery()
         self.txt2img_w_slider = gr.Slider()
         self.txt2img_h_slider = gr.Slider()
         self.img2img_w_slider = gr.Slider()
@@ -165,6 +166,7 @@ class Script(scripts.Script):
                     converted = frame.convert('RGBA')
                 self.gif_frames.append(converted)
             self.ready = True
+            self.img2img_gallery.update([gif.name])
             return self.gif_frames[0], blend_images(self.gif_frames), gif.name, self.orig_fps, self.orig_fps, (f"{self.orig_total_seconds} seconds"), self.orig_n_frames
             #except:
             #    print(f"Failed to load {gif.name}. Not a valid animated GIF?")
@@ -204,7 +206,9 @@ class Script(scripts.Script):
         if component.elem_id == "img2maskimg":
             self.img2img_inpaint_component = component
             return self.img2img_inpaint_component
-    
+        if component.elem_id == "img2img_gallery":
+            self.img2img_gallery = component
+            return self.img2img_gallery
     #Main run
     def run(self, p, gif_resize, gif_clear_frames, gif_common_seed, loop_backs, loop_denoise, loop_decay, ups_upscaler, ups_only_upscale, ups_scale_mode, ups_scale_by, ups_scale_to_w, ups_scale_to_h, ups_scale_to_crop):
         try:
@@ -266,7 +270,7 @@ class Script(scripts.Script):
                 for pi in proc.images:
                     if type(pi) is Image.Image:
                         proc_batch.append(pi)
-                if len(proc_batch) > 1:
+                if len(proc_batch) > 1 and p.batch_size > 1:
                     inter_images.append(blend_images(proc_batch))
                 else:
                     inter_images.append(proc_batch[0])
@@ -286,6 +290,10 @@ class Script(scripts.Script):
             if(self.desired_interp > 0):
                 print(f"gif2gif: Interpolating {gif_filename}..")
                 interp(gif_filename, self.desired_interp, self.desired_duration)
-            return_images.extend(inter_images)
+            
+            if not gif_clear_frames:
+                return_images.extend(inter_images)
+            return_images.append(Image.open(gif_filename))
         inter_images = []
+        
         return Processed(p, return_images, p.seed, "", all_prompts=all_prompts, infotexts=infotexts)
