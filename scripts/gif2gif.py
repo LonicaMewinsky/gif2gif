@@ -307,7 +307,6 @@ class Script(scripts.Script):
                 for i in range(len(inter_images)):
                     inter_images[i] = inter_images[i].resize(self.orig_dimensions)
             #First make temporary file via save_images, then save actual gif over it..
-            #Probably a better way to do this, but this easily maintains file name and .txt file logic
             gif_filename = (modules.images.save_image(inc_frames[0], outpath, "gif2gif", extension = 'gif', info = infotexts[0])[0])
             print(f"gif2gif: Generating GIF to {gif_filename}..")
             inter_images[0].save(gif_filename,
