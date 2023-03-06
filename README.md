@@ -17,7 +17,7 @@ The purpose of this script is to accept an animated gif as input, process frames
    - Count of interp frames represent the number of blend steps between keyframes.
    - This is a very simple dynamic interp function; the keyframes are left as-is.
    - When *actual FPS* reaches 50, the maximum, the resultant gif will slow and extend to accomodate interp.
- - Results are dropped into outputs/img2img/gif2gif
+ - Results are dropped into outputs/img2img/gif2gif, and displayed in output gallery on right side
 
 **Tips:**
  - Configure and process the gif in img2img (it'll use the first frame) before running the script. Find a good seed!
@@ -29,19 +29,9 @@ The purpose of this script is to accept an animated gif as input, process frames
  - Clone this repo into your Automatic1111 WebUI /extensions folder, restart UI
  
 **Changelog:**
-- 3/03/23: Added support for embedding generation into into GIF
+- 3/06/23: GIFs are now sent to results gallery(!) and "re-use last seed" works more reliably.
+- 3/03/23: Added support for embedding generation into into GIF.
 - 3/03/23: Blended inpainting picture had major performance issues on some systems; made optional.
-- 3/02/23: Changed inpainting functionality -- blends frames for better representation.
-- 2/26/23: Changed batch size functionality.
-- 2/26/23: Added loopback denoise decay slider.
-- 2/25/23: Added loopback denoise slider.
-- 2/24/23: Added loopback support. Less than 0.2 denoise recommended.
-- 2/23/23: Added upscaling support. Can possibly help with controlnet annotations.
-- 2/23/23: Updated UI, fixed a bug, extended support for "multi-model" controlnet.
-- 2/20/23: Fixed issue with first frame not working with controlnet extension.
-- 2/14/23: Now works, mostly, with https://github.com/Mikubill/sd-webui-controlnet extension.
-- 2/10/23: Updated inpainting window to behave more predictably
-- 2/10/23: Fixed inpainting window odd behavior on images smaller than 480h
 
 ![R](https://user-images.githubusercontent.com/93007558/216517487-542271b1-6fdb-4e54-a261-e500f5cc5c7a.gif)![download](https://user-images.githubusercontent.com/93007558/216803715-81dfc9e6-8c9a-47d5-9879-27acfac34eb8.gif)
 
