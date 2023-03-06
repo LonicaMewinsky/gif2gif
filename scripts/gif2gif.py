@@ -324,9 +324,9 @@ class Script(scripts.Script):
             if(self.desired_interp > 0):
                 print(f"gif2gif: Interpolating {gif_filename}..")
                 interp(gif_filename, self.desired_interp, self.desired_duration)
+            #Returns
+            return_images.append(gif_filename)            
             if not gif_clear_frames:
                 return_images.extend(inter_images)
-            return_images.append(Image.open(gif_filename))
-        inter_images = []
         
-        return Processed(p, return_images, p.seed, "", all_prompts=all_prompts, infotexts=infotexts)
+        return Processed(copy_p, return_images, copy_p.seed, "", all_prompts=all_prompts, infotexts=infotexts)
