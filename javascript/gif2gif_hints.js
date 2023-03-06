@@ -1,6 +1,6 @@
-// mouseover tooltips for various UI elements
+// mouseover tooltips for various UI elements in the form of "UI element label"="Tooltip text".
 
-titles = {
+gif2gif_titles = {
     "Upload GIF": "Click here to upload your GIF",
 	"Desired FPS": "Target FPS; defaults to original FPS",
 	"Interpolation frames": "Number of transition frames between key frames",
@@ -10,16 +10,16 @@ titles = {
 
 onUiUpdate(function(){
 	gradioApp().querySelectorAll('span, button, select, p').forEach(function(span){
-		tooltip = titles[span.textContent];
+		tooltip = gif2gif_titles[span.textContent];
 
 		if(!tooltip){
-		    tooltip = titles[span.value];
+		    tooltip = gif2gif_titles[span.value];
 		}
 
 		if(!tooltip){
 			for (const c of span.classList) {
-				if (c in titles) {
-					tooltip = titles[c];
+				if (c in gif2gif_titles) {
+					tooltip = gif2gif_titles[c];
 					break;
 				}
 			}
@@ -34,7 +34,7 @@ onUiUpdate(function(){
 	    if (select.onchange != null) return;
 
 	    select.onchange = function(){
-            select.title = titles[select.value] || "";
+            select.title = gif2gif_titles[select.value] || "";
 	    }
 	})
 })
