@@ -5,7 +5,7 @@ import modules.images
 import gradio as gr
 import numpy as np
 import tempfile
-import random
+import importlib
 from PIL import Image, ImageSequence
 from modules.processing import Processed, process_images
 from modules.shared import opts, state, sd_upscalers
@@ -241,6 +241,13 @@ class Script(scripts.Script):
         
     #Main run
     def run(self, p, gif_resize, gif_clear_frames, gif_common_seed, loop_backs, loop_denoise, loop_decay, ups_upscaler, ups_only_upscale, ups_scale_mode, ups_scale_by, ups_scale_to_w, ups_scale_to_h, ups_scale_to_crop):
+        cnet_present = False
+        try:
+            cnet = importlib.import_module('extensions.sd-webui-controlnet.scripts.external_code', 'external_code')
+            cnet_present = True
+        except:
+            pass
+        orig_p = copy.copy(p)
         try:
             inc_frames = self.gif_frames
         except:
@@ -273,27 +280,38 @@ class Script(scripts.Script):
         for x in range(gif_n_iter):
             if state.skipped: state.skipped = False
             if state.interrupted: break
-            copy_p = copy.copy(p)
-            color_correction = [modules.processing.setup_color_correction(copy_p.init_images[0])]
+            color_correction = [modules.processing.setup_color_correction(p.init_images[0])]
             if(gif_common_seed and (p.seed == -1)):
-                modules.processing.fix_seed(copy_p)
+                modules.processing.fix_seed(p)
             
             #Iterate frames
             for frame in inc_frames:
                 if state.skipped: state.skipped = False
                 if state.interrupted: break
-                copy_p.denoising_strength = p.denoising_strength #reset denoise
+                p.denoising_strength = orig_p.denoising_strength #reset denoise
                 frame_loop_denoise = loop_denoise
                 state.job = f"{state.job_no + 1} out of {state.job_count}"
-                copy_p.init_images = [frame] * p.batch_size #inject current frame
-                copy_p.control_net_input_image = frame.convert("RGB") #account for controlnet
-                proc = process_images(copy_p) #process
+                p.init_images = [frame] * p.batch_size #inject current frame
+                #Handle controlnets
+                if cnet_present:
+                    cn_layers = cnet.get_all_units_in_processing(orig_p)
+                    new_layers = []
+                    for layer in cn_layers:
+                        if (layer.image == None) and (layer.enabled == True):
+                            nimg = np.array(frame.convert("RGB"))
+                            bimg = np.zeros((frame.width, frame.height, 3), dtype = np.uint8)
+                            layer.image = {"image" : nimg, "mask" : bimg}
+                        new_layers.append(layer)
+                    cnet.update_cn_script_in_processing(p, new_layers)
+            #Process
+                
+                proc = process_images(p) #process
                 #Do loopbacks
                 for _ in range(loop_backs):
-                    copy_p.init_images = [proc.images[0].convert("RGB")] * p.batch_size
-                    copy_p.color_corrections = color_correction
-                    copy_p.denoising_strength = frame_loop_denoise
-                    proc = process_images(copy_p)
+                    p.init_images = [proc.images[0].convert("RGB")] * p.batch_size
+                    p.color_corrections = color_correction
+                    p.denoising_strength = frame_loop_denoise
+                    proc = process_images(p)
                     frame_loop_denoise = round(frame_loop_denoise*loop_decay, 2)
                 #Handle batches
                 proc_batch = []
@@ -329,4 +347,4 @@ class Script(scripts.Script):
             if not gif_clear_frames:
                 return_images.extend(inter_images)
         
-        return Processed(copy_p, return_images, copy_p.seed, "", all_prompts=all_prompts, infotexts=infotexts)
+        return Processed(p, return_images, p.seed, "", all_prompts=all_prompts, infotexts=infotexts)
