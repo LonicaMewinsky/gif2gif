@@ -5,6 +5,8 @@ Automatic1111 Stable Diffusion WebUI GIF Extension
 
 The purpose of this script is to accept an animated gif as input, process frames as img2img typically would, and recombine them back into an animated gif. Intended to provide a fun, fast, gif-to-gif workflow that supports new models and methods such as Controlnet and InstructPix2Pix. Drop in a gif and go. Referenced code from prompts_from_file.
 
+![combined](https://user-images.githubusercontent.com/93007558/224235828-f4d0be70-67da-41fc-b225-558576b4b5d4.gif)
+
 Experimental/WIP similar repos:
 - [Concurrent gif2gif](https://github.com/LonicaMewinsky/Concurrent-gif2gif) - Multiple frames in same latent space.
 - [frame2frame](https://github.com/LonicaMewinsky/frame2frame) - Handles video files (and gifs).
