@@ -8,7 +8,7 @@ The purpose of this script is to accept an animated gif as input, process frames
 ![combined](https://user-images.githubusercontent.com/93007558/224235828-f4d0be70-67da-41fc-b225-558576b4b5d4.gif)
 
 Experimental/WIP similar repos:
-- [Concurrent gif2gif](https://github.com/LonicaMewinsky/Concurrent-gif2gif) - Multiple frames in same latent space.
+- [keyframer](https://github.com/LonicaMewinsky/sd-webui-keyframer) - Multiple images in same latent space. Good for keyframes.
 - [frame2frame](https://github.com/LonicaMewinsky/frame2frame) - Handles video files (and gifs).
 
 **Instructions:**
