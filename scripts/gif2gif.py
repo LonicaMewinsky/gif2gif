@@ -109,7 +109,7 @@ class Script(scripts.Script):
                     with gr.Row():
                         with gr.Column():
                             with gr.Box():
-                                fps_slider = gr.Slider(1, 50, step = 1, label = "Desired FPS")
+                                fps_slider = gr.Slider(1, 50, step = 1, label = "Desired FPS", elem_id="harbl")
                                 interp_slider = gr.Slider(label = "Interpolation frames", value = 0)
                                 gif_resize = gr.Checkbox(value = True, label="Resize result back to original dimensions")
                                 gif_clear_frames = gr.Checkbox(value = True, label="Delete intermediate frames after GIF generation")
@@ -244,7 +244,13 @@ class Script(scripts.Script):
         cnet_present = False
         try:
             cnet = importlib.import_module('extensions.sd-webui-controlnet.scripts.external_code', 'external_code')
-            cnet_present = True
+            cn_layers = cnet.get_all_units_in_processing(p)
+            target_layer_indices = []
+            for i in range(len(cn_layers)):
+                if (cn_layers[i].image == None) and (cn_layers[i].enabled == True):
+                    target_layer_indices.append(i)
+            if len(target_layer_indices) >0:
+                cnet_present = True
         except:
             pass
         orig_p = copy.copy(p)
@@ -294,14 +300,13 @@ class Script(scripts.Script):
                 p.init_images = [frame] * p.batch_size #inject current frame
                 #Handle controlnets
                 if cnet_present:
-                    cn_layers = cnet.get_all_units_in_processing(orig_p)
                     new_layers = []
-                    for layer in cn_layers:
-                        if (layer.image == None) and (layer.enabled == True):
+                    for i in range(len(cn_layers)):
+                        if i in target_layer_indices:
                             nimg = np.array(frame.convert("RGB"))
                             bimg = np.zeros((frame.width, frame.height, 3), dtype = np.uint8)
-                            layer.image = {"image" : nimg, "mask" : bimg}
-                        new_layers.append(layer)
+                            cn_layers[i].image = [{"image" : nimg, "mask" : bimg}]
+                        new_layers.append(cn_layers[i])
                     cnet.update_cn_script_in_processing(p, new_layers)
             #Process
                 
