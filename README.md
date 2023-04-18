@@ -17,8 +17,8 @@ Experimental/WIP similar repos:
  - All images in a single batch will be blended together. May help with consistency between frames.
  - Drop or select gif in the script's box; a preview should appear if it is a valid animated gif.
  - Inpainting works, but currently limited to one mask applied to all frames equally.
-   - Depending on version on A1111, you may need to have Inpaint tab selected before uploading gif.
-   - Optionally send an image to Inpaint tab with all frames blended together.
+   - Ensure the img2img *Inpaint* tab is selected before pressing a *send to..* button.
+   - Blended image may take some time to generate.
  - Results are displayed in output gallery on right side.
  - [ControlNet](https://github.com/Mikubill/sd-webui-controlnet) extension handling improved:
    - "Target ControlNet models" dropdown added; specifies which models to replace input image with frames.
@@ -33,4 +33,5 @@ Experimental/WIP similar repos:
  - Clone this repo into your Automatic1111 WebUI /extensions folder, restart UI
  
 **Changelog:**
+- 4/18/23: Adjusted inpainting functionality to act more predictably with current A1111 release.
 - 4/17/23: Pared back rarely-used options to focus on primary functions (made 'old' branch). Improved ControlNet handling.

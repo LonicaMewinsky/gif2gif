@@ -47,10 +47,8 @@ class Script(scripts.Script):
     def after_component(self, component, **kwargs):
         if component.elem_id == "img2img_image":
             self.img2img_component = component
-            return self.img2img_component
         if component.elem_id == "img2maskimg":
             self.img2img_inpaint_component = component
-            return self.img2img_inpaint_component    
         
     def ui(self, is_img2img):
         try:
@@ -74,7 +72,9 @@ class Script(scripts.Script):
                         duration_original = gr.State(value=0)
                     with gr.Tab("Inpainting", open = False):
                         with gr.Column():
-                            make_blend = gr.Button("Send blended image to img2img Inpainting tab")
+                            inpaint_md = gr.Markdown("Before sending image, ensure img2img Inpaint tab is selected.")
+                            send_firstframe = gr.Button("Send first frame to img2img Inpainting tab")
+                            send_blend = gr.Button("Send blended image to img2img Inpainting tab")
             with gr.Column():
                 upload_gif = gr.File(label="Upload GIF", visible=True, file_types = ['.gif','.webp','.plc'], file_count = "single")
                 display_gif = gr.Image(label = "Preview GIF", Source="Upload", visible=False, interactive=True, type="filepath")
@@ -86,15 +86,15 @@ class Script(scripts.Script):
                     init_gif.resize((round(480*init_gif.width/init_gif.height), 480), Image.Resampling.LANCZOS)
                 file_length = round((init_gif.info["duration"] * init_gif.n_frames)/1000, 2)
                 file_fps = round(1000 / int(init_gif.info["duration"]), 2)
-                return init_gif, init_gif, gr.Image.update(file.name, visible=True), gr.File.update(visible=False), file_fps, file_length, init_gif.n_frames, init_gif.info["duration"]
+                return file.name, gr.Image.update(file.name, visible=True), gr.File.update(visible=False), file_fps, file_length, init_gif.n_frames, init_gif.info["duration"]
             except:
                 print("gif2gif: Problem with loading gif.")
-                return gr.Image.update(), gr.Image.update(), gr.Image.update(), gr.File.update(), gr.Number.update(), gr.Number.update(), gr.Number.update(), gr.State.update()
+                return gr.Image.update(), gr.Image.update(), gr.File.update(), gr.Number.update(), gr.Number.update(), gr.Number.update(), gr.State.update()
         
         def clear_image():
             return gr.Image.update(value=None, visible=False), gr.File.update(value=None, visible=True), 0, 0, 0
         
-        def send_blend(file):
+        def make_blend(file):
             if file == None:
                 return gr.Image.update() #none
             else:
@@ -104,10 +104,21 @@ class Script(scripts.Script):
                 if blended.height < 480:
                     blended.resize((round(480*blended.width/blended.height), 480), Image.Resampling.LANCZOS)
                 return blended
+            
+        def make_firstframe(file):
+            if file == None:
+                return gr.Image.update() #none
+            else:
+                frames = file_to_list(file.name)
+                frame = frames[0].convert("RGBA")
+                if frame.height < 480:
+                    frame.resize((round(480*frame.width/frame.height), 480), Image.Resampling.LANCZOS)
+                return frame
         
-        upload_gif.upload(process_upload, inputs=[upload_gif], outputs=[self.img2img_component, self.img2img_inpaint_component, display_gif, upload_gif, fps_original, seconds_original, frames_original, duration_original])
+        upload_gif.upload(process_upload, inputs=[upload_gif], outputs=[self.img2img_component, display_gif, upload_gif, fps_original, seconds_original, frames_original, duration_original])
         display_gif.clear(clear_image, inputs=None, outputs=[display_gif, upload_gif, fps_original, seconds_original, frames_original])
-        make_blend.click(send_blend, inputs=[upload_gif], outputs=[self.img2img_inpaint_component])
+        send_blend.click(make_blend, inputs=[upload_gif], outputs=[self.img2img_inpaint_component])
+        send_firstframe.click(make_firstframe, inputs=[upload_gif], outputs=[self.img2img_inpaint_component])
         return cnet_targets, gif_resize, gif_clear_frames, gif_common_seed, frames_original, duration_original, upload_gif
     
      #Main run
