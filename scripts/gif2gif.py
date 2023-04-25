@@ -83,13 +83,18 @@ class Script(scripts.Script):
         def process_upload(file):
             try:
                 init_gif = Image.open(file.name)
+                ani_duration = 50
+                try:
+                    ani_duration = init_gif.info["duration"]
+                except:
+                    pass
                 if init_gif.height < 480:
                     init_gif.resize((round(480*init_gif.width/init_gif.height), 480), Image.Resampling.LANCZOS)
-                file_length = round((init_gif.info["duration"] * init_gif.n_frames)/1000, 2)
-                file_fps = round(1000 / int(init_gif.info["duration"]), 2)
-                return file.name, gr.Image.update(file.name, visible=True), gr.File.update(visible=False), file_fps, file_length, init_gif.n_frames, init_gif.info["duration"]
+                file_length = round((ani_duration * init_gif.n_frames)/1000, 2)
+                file_fps = round(1000 / int(ani_duration), 2)
+                return file.name, gr.Image.update(file.name, visible=True), gr.File.update(visible=False), file_fps, file_length, init_gif.n_frames, ani_duration
             except:
-                print("gif2gif: Problem with loading gif.")
+                print("gif2gif: Problem with loading animation.")
                 return gr.Image.update(), gr.Image.update(), gr.File.update(), gr.Number.update(), gr.Number.update(), gr.Number.update(), gr.State.update()
         
         def clear_image():
