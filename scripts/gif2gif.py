@@ -62,6 +62,7 @@ class Script(scripts.Script):
                     with gr.Tab("Settings"):
                         if cnet_num > 0:
                             cnet_targets = gr.Dropdown(label="Target ControlNet models", multiselect=True, choices=[str(x) for x in range(cnet_num)])
+                        gif_format = gr.Dropdown(label="Format", choices=["gif", "apng", "webp"], value="gif")
                         gif_resize = gr.Checkbox(value = True, label="Resize result back to original dimensions")
                         gif_clear_frames = gr.Checkbox(value = True, label="Delete intermediate frames after GIF generation")
                         gif_common_seed = gr.Checkbox(value = True, label="For -1 seed, all frames in a GIF have common seed")
@@ -76,7 +77,7 @@ class Script(scripts.Script):
                             send_firstframe = gr.Button("Send first frame to img2img Inpainting tab")
                             send_blend = gr.Button("Send blended image to img2img Inpainting tab")
             with gr.Column():
-                upload_gif = gr.File(label="Upload GIF", visible=True, file_types = ['.gif','.webp','.plc'], file_count = "single")
+                upload_gif = gr.File(label="Upload GIF", visible=True, file_types = ['.gif','.webp','.apng'], file_count = "single")
                 display_gif = gr.Image(label = "Preview GIF", Source="Upload", visible=False, interactive=True, type="filepath")
         
         def process_upload(file):
@@ -119,10 +120,10 @@ class Script(scripts.Script):
         display_gif.clear(clear_image, inputs=None, outputs=[display_gif, upload_gif, fps_original, seconds_original, frames_original])
         send_blend.click(make_blend, inputs=[upload_gif], outputs=[self.img2img_inpaint_component])
         send_firstframe.click(make_firstframe, inputs=[upload_gif], outputs=[self.img2img_inpaint_component])
-        return cnet_targets, gif_resize, gif_clear_frames, gif_common_seed, frames_original, duration_original, upload_gif
+        return cnet_targets, gif_resize, gif_clear_frames, gif_common_seed, frames_original, duration_original, upload_gif, gif_format
     
      #Main run
-    def run(self, p, cnet_targets, gif_resize, gif_clear_frames, gif_common_seed, frames_original, duration_original, upload_gif):
+    def run(self, p, cnet_targets, gif_resize, gif_clear_frames, gif_common_seed, frames_original, duration_original, upload_gif, gif_format):
         #Check for ControlNet
         cnet_present = False
         try:
@@ -181,7 +182,7 @@ class Script(scripts.Script):
                 for i in range(len(gen_frames)):
                     gen_frames[i] = gen_frames[i].resize(raw_frames[0].size)
             #Save output
-            out_filename = (modules.images.save_image(gen_frames[0], p.outpath_samples, "gif2gif", extension = 'gif')[0])
+            out_filename = (modules.images.save_image(gen_frames[0], p.outpath_samples, "gif2gif", extension = gif_format)[0])
             file_info=""
             if opts.enable_pnginfo and infotexts[0] is not None:
                 file_info = infotexts[0].replace('\n', ', ')
