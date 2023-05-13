@@ -66,6 +66,7 @@ class Script(scripts.Script):
                         gif_resize = gr.Checkbox(value = True, label="Resize result back to original dimensions")
                         gif_clear_frames = gr.Checkbox(value = True, label="Delete intermediate frames after GIF generation")
                         gif_common_seed = gr.Checkbox(value = True, label="For -1 seed, all frames in a GIF have common seed")
+                        gif_blendbatch = gr.Checkbox(value = False, label="Blend multiple outputs (batch, ControlNet maps)")
                     with gr.Tab("Information"):
                         fps_original = gr.Number(value=0, interactive = False, label = "Original FPS")
                         seconds_original = gr.Number(value=0, interactive = False, label = "Original total duration")
@@ -125,10 +126,10 @@ class Script(scripts.Script):
         display_gif.clear(clear_image, inputs=None, outputs=[display_gif, upload_gif, fps_original, seconds_original, frames_original])
         send_blend.click(make_blend, inputs=[upload_gif], outputs=[self.img2img_inpaint_component])
         send_firstframe.click(make_firstframe, inputs=[upload_gif], outputs=[self.img2img_inpaint_component])
-        return cnet_targets, gif_resize, gif_clear_frames, gif_common_seed, frames_original, duration_original, upload_gif, gif_format
+        return cnet_targets, gif_resize, gif_clear_frames, gif_common_seed, frames_original, duration_original, upload_gif, gif_format, gif_blendbatch
     
      #Main run
-    def run(self, p, cnet_targets, gif_resize, gif_clear_frames, gif_common_seed, frames_original, duration_original, upload_gif, gif_format):
+    def run(self, p, cnet_targets, gif_resize, gif_clear_frames, gif_common_seed, frames_original, duration_original, upload_gif, gif_format, gif_blendbatch):
         #Check for ControlNet
         cnet_present = False
         try:
@@ -148,6 +149,8 @@ class Script(scripts.Script):
         state.job_count = len(raw_frames) * p.n_iter
         p.do_not_save_grid = True
         p.do_not_save_samples = gif_clear_frames
+        if not gif_blendbatch:
+            p.batch_size = 1
         all_prompts = []
         infotexts = []
         return_files = []
@@ -177,7 +180,7 @@ class Script(scripts.Script):
                     cnet.update_cn_script_in_processing(p, new_units)
                 #Generate
                 proc = process_images(copy_p)
-                if len(proc.images) > 1:
+                if (len(proc.images) > 1) and gif_blendbatch:
                     gen_frames.append(blend_images(proc.images))
                 else:
                     gen_frames.append(proc.images[0])
