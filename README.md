@@ -25,6 +25,7 @@ Experimental/WIP similar repos:
    - Ensure the img2img *Inpaint* tab is selected before pressing a *send to..* button.
    - Blended image may take some time to generate.
  - Results are displayed in output gallery on right side.
+ - Optionally blend output images. This will blend batches and ControlNet detectmaps together into one image.
  - [ControlNet](https://github.com/Mikubill/sd-webui-controlnet) extension handling improved:
    - "Target ControlNet models" dropdown added; specifies which models to replace input image with frames.
    - Allows, for example, a static *depth* background while animation feeds *openpose*.
@@ -38,6 +39,7 @@ Experimental/WIP similar repos:
  - Clone this repo into your Automatic1111 WebUI /extensions folder, restart UI
  
 **Changelog:**
+- 5/13/23: Made multiple output blending optional.
 - 4/25/23: Extended support for APNG and WebP files.
 - 4/18/23: Adjusted inpainting functionality to act more predictably with current A1111 release.
 - 4/17/23: Pared back rarely-used options to focus on primary functions (made 'old' branch). Improved ControlNet handling.
